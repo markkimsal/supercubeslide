@@ -1,0 +1,5 @@
+.svn
+*.pyc
+*~
+media/assets/
+mediasrc/*.xcf
