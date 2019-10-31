@@ -133,10 +133,10 @@ class Modes_Play (gamemode.Modes_GameMode):
 
 		if(field.updatePerTurn() == True):
 			removedBlocks = self.myGame.field.resolveField(self.sprite)
-			if (removedBlocks > 0):
+			if (removedBlocks and removedBlocks > 0):
 				self.chain+=1
 
-			if (removedBlocks > 0):
+			if (removedBlocks and removedBlocks > 0):
 				if (self.chain > 1):
 					self.textBoard.addMessage("Chain x"+ str(self.chain)+ "!")
 					self.myGame.addMessage("Chain x"+ str(self.chain)+ "!")

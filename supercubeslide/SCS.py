@@ -93,8 +93,8 @@ class SCS_Game:
 		tall = self.startTall
 		wide = self.startWide
 		#field is 19x16
-		leftCorner = (19/2) - (wide/2) + 0
-		upperCorner = (16/2) - (tall/2) + 0
+		leftCorner = (int)(19/2) - (int)(wide/2) + 0
+		upperCorner = (int)(16/2) - (int)(tall/2) + 0
 		
 
 		sprite =  SCS_sprite(pygame.image.load(getFilename( '../media/block_d.png')), 'blue')

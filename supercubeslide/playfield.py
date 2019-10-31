@@ -33,7 +33,7 @@ class playfield:
 		self.g_offset_y = y
 		self.isDirty = 0
 		#self.newGrid = numpy.array( [[None]*(height/self.y_size)]*(width/self.x_size), numpy.PyObject)
-		self.newGrid = numpy.array( [[None]*(height/self.y_size)]*(width/self.x_size))
+		self.newGrid = numpy.array( [[None]*(int)(height/self.y_size)]*(int)(width/self.x_size))
 		self.clearGrid()
 		self.needsCompact = 0
 		self.needsRemoving = []
@@ -280,8 +280,8 @@ class playfield:
 
 
 	def clearGrid(self):
-		for x in range (0,self.width/24):
-			for y in range(0,self.height/24):
+		for x in range (0,(int)(self.width/24)):
+			for y in range(0,(int)(self.height/24)):
 				self.newGrid[x,y] =  None
 
 
@@ -291,7 +291,7 @@ class playfield:
 		for act in self.immobiles:
 			#print("new actor added at ", ((act.x_pos/24), (act.y_pos/24)))
 			#print("new actor added at ", ((act.x_pos), (act.y_pos)))
-			self.newGrid[act.x_pos/24,act.y_pos/24]= act
+			self.newGrid[(int)(act.x_pos/24),(int)(act.y_pos/24)]= act
 
 
 	def compactGrid(self, player):
