@@ -28,7 +28,7 @@ class SCS_gameclock():
 		#repaint the clock graphic with more and more black
 		pctEmpty = (100-self.currentTicks) * 1.41
 		self.image.blit( self.emptyImage, (0, 0), pygame.Rect(0, 0, 39, pctEmpty))
-		#print "# Game Clock ", self.currentTicks
+		#print("# Game Clock ", self.currentTicks)
 
 	def repaintSelf(self):
 		self.image.blit(self.originalImage, (0, 0))

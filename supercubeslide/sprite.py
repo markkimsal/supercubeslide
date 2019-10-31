@@ -258,8 +258,8 @@ class SCS_sprite:
 		#this gives you the direction of the neighbor vs the player
 		deltaX = neighbor.x_pos - self.x_pos 
 		deltaY = neighbor.y_pos - self.y_pos
-		#print 'delta x ', deltaX
-		#print 'delta y ', deltaY
+		#print('delta x ', deltaX)
+		#print('delta y ', deltaY)
 
 		field.intUpd = field.intUpd.unionall( (field.intUpd,pygame.Rect( self.x_pos, self.y_pos, 24, 24)))
 		self.x_pos = neighbor.x_pos
@@ -269,7 +269,7 @@ class SCS_sprite:
 		while ( 1 ):
 			neighbor.isDirty = 1
 			nextNeighbor = field.getObject(neighbor.x_pos+deltaX,neighbor.y_pos+deltaY)
-			#print 'next neighbor is ',nextNeighbor 
+			#print('next neighbor is ',nextNeighbor )
 			neighbor.x_pos += deltaX
 			neighbor.y_pos += deltaY
 			if ( not nextNeighbor ):
@@ -280,7 +280,7 @@ class SCS_sprite:
 		field.removeFromPlayfield(self)
 		#field.scheduleRemove(neighbor)
 		#field.scheduleRemove(self)
-		#print " PROCESS ACTION ## sliding actor into field"
+		#print(" PROCESS ACTION ## sliding actor into field")
 		neighbor.isMobile = 1
 		self.isMobile = 0
 		field.addToPlayfield(neighbor, neighbor.x_pos, neighbor.y_pos)

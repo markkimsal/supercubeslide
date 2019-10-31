@@ -36,7 +36,7 @@ class Modes_Pause (gamemode.Modes_GameMode):
 		pass
 
 	def enterMode(self):
-		print "entering pause mode"
+		print("entering pause mode")
 		pass
 
 	def exitMode(self):

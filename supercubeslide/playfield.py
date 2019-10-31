@@ -69,10 +69,10 @@ class playfield:
 	def addToPlayfield(self, actor, x, y):
 		actor.x_pos = x
 		actor.y_pos = y
-		#print "actor = (" , actor.x_pos, ", ", actor.y_pos,") "
+		#print("actor = (" , actor.x_pos, ", ", actor.y_pos,") ")
 		actor.isDirty = 1
 		if (actor.isMobile == 1):
-			#print "got a mobile actor"
+			#print("got a mobile actor")
 			self.actors.append(actor)
 		else:
 			#self.checkForPlayer( (actor.x_pos, actor.y_pos) )
@@ -161,10 +161,10 @@ class playfield:
 			if act.x_pos == newXPos and act.y_pos == newYPos:
 				return 1;
 			if newXPos < self.g_offset_x or newYPos < self.g_offset_y:
-				#print "can't move up or left\n"
+				#print("can't move up or left\n")
 				return 1;
 			if newXPos >= self.g_offset_x+self.width or newYPos >= self.g_offset_y+self.height:
-				#print "can't move down or right\n"
+				#print("can't move down or right\n")
 				return 1;
 		return 0
 
@@ -174,7 +174,7 @@ class playfield:
 		"""
 		neighborActor = 0;
 		for act in self.immobiles:
-			#print act
+			#print(act)
 			#striaght up
 			if (actor.x_pos == act.x_pos
 				and actor.y_pos - actor.y_size == act.y_pos):
@@ -210,7 +210,7 @@ class playfield:
 		to happen """
 
 		if ( self.isDirty ):
-			#print "i'm dirty...."
+			#print("i'm dirty....")
 			self.sortGrid()
 			return True
 
@@ -224,16 +224,16 @@ class playfield:
 		"""wholly unoptimized
 		"""
 
-		#print "needs Compact ", self.needsCompact
+		#print("needs Compact ", self.needsCompact)
 
 		if ( self.isDirty ):
 				self.sortGrid()
 
 		if (self.needsCompact):
-			#print "returning compact"
+			#print("returning compact")
 			return self.compactGrid(player)
 
-		#print "running resolve field"
+		#print("running resolve field")
 		gridWidth = len(self.newGrid)
 		gridHeight = len(self.newGrid[0])
 		for x in range (0, gridWidth):
@@ -287,8 +287,8 @@ class playfield:
 		self.clearGrid()
 		self.isDirty = 0
 		for act in self.immobiles:
-			#print "new actor added at ", ((act.x_pos/24), (act.y_pos/24))
-			#print "new actor added at ", ((act.x_pos), (act.y_pos))
+			#print("new actor added at ", ((act.x_pos/24), (act.y_pos/24)))
+			#print("new actor added at ", ((act.x_pos), (act.y_pos)))
 			self.newGrid[act.x_pos/24,act.y_pos/24]= act
 
 
@@ -300,8 +300,8 @@ class playfield:
 			if (act.__class__ == sprite.SCS_magnetSprite):
 				self.scheduleRemove(act)
 				deadBlocks +=1
-				#print "got a magnet sprite"
-				#print "self.missing Column = ", self.missingColumn
+				#print("got a magnet sprite")
+				#print("self.missing Column = ", self.missingColumn)
 				if (self.missingColumn is not None):
 					if (self.missingColumn > 10 ):
 						deltaX = -24
@@ -317,7 +317,7 @@ class playfield:
 						deltaX = 0
 						deltaY = 24
 
-				#print "Delta x = ", deltaX, " delta y = ", deltaY
+				#print("Delta x = ", deltaX, " delta y = ", deltaY)
 				neighbor = self.getObject(act.x_pos-deltaX, act.y_pos-deltaY)
 				if (not neighbor):
 					continue
@@ -331,7 +331,7 @@ class playfield:
 					nextNeighbor = self.getObject(neighbor.x_pos-deltaX,neighbor.y_pos-deltaY)
 					if nextNeighbor == neighbor:
 						break
-					#print 'next neighbor is ',nextNeighbor 
+					#print('next neighbor is ',nextNeighbor )
 					neighbor.x_pos += deltaX
 					neighbor.y_pos += deltaY
 					if ( not nextNeighbor ):
@@ -341,10 +341,10 @@ class playfield:
 		if player is None:
 			return deadBlocks
 
-		#print "missing column = ", self.missingColumn
-		#print "missing row    = ", self.missingRow
-		#print "player  x_pos     = ", player.x_pos / 24
-		#print "player  y_pos     = ", player.y_pos / 24
+		#print("missing column = ", self.missingColumn)
+		#print("missing row    = ", self.missingRow)
+		#print("player  x_pos     = ", player.x_pos / 24)
+		#print("player  y_pos     = ", player.y_pos / 24)
 		#if (self.missingColumn is not None):
 		#	player.x_pos += deltaX
 
@@ -380,7 +380,7 @@ class playfield:
 			act.update(self)
 			act.paint(g)
 			if act.isDirty:
-				#print " == actor is dirty "
+				#print(" == actor is dirty ")
 				updates = updates.unionall( (updates,(act.x_pos,act.y_pos,24,24)) )
 				act.isDirty = 0
 
@@ -418,7 +418,7 @@ class playfield:
 			if (rowCount > 1):
 				break;
 
-		#print "rowCount ", rowCount, " colCount", colCount
+		#print("rowCount ", rowCount, " colCount", colCount)
 		if ((rowCount < 1) and (colCount < 1)):
 			return 1
 
@@ -446,7 +446,7 @@ class playfield:
 			if maxRowCount > 0:
 				break;
 
-		#print "maxRowCount = ", maxRowCount, " maxColCount = ", maxColCount
+		#print("maxRowCount = ", maxRowCount, " maxColCount = ", maxColCount)
 		if maxRowCount >= maxColCount:
 			self.addNewCol()
 		else:
@@ -479,7 +479,7 @@ class playfield:
 						colEnd = y
 
 
-		#print "going to add row between ", rowStart, ' ', rowEnd, ' and ', colStart, ' ', colEnd
+		#print("going to add row between ", rowStart, ' ', rowEnd, ' and ', colStart, ' ', colEnd)
 		colors = (('red','b'),('green','a'),('orange','c'),('blue','d'))
 
 		#decide to add row on top or bottom
@@ -489,7 +489,7 @@ class playfield:
 			colInsert = colEnd
 		else:
 			colInsert = colStart-2
-		#print "midpiont is ", midpoint, ' colend - midpoint is ', (colEnd - midpoint), ' colstart - midpoint is ', (midpoint - colStart)
+		#print("midpiont is ", midpoint, ' colend - midpoint is ', (colEnd - midpoint), ' colstart - midpoint is ', (midpoint - colStart))
 
 		#first, move the player out of the way
 		# otherwise it won't know wich direction to move away from
@@ -533,7 +533,7 @@ class playfield:
 						colEnd = y
 
 
-		#print "going to col row between ", colStart, ' ' , colEnd
+		#print("going to col row between ", colStart, ' ' , colEnd)
 		colors = (('red','b'),('green','a'),('orange','c'),('blue','d'))
 
 		#decide to add row on top or bottom
@@ -543,7 +543,7 @@ class playfield:
 			rowInsert = rowEnd 
 		else:
 			rowInsert = rowStart -2
-		#print "midpiont is ", midpoint, ' rowend - midpoint is ', (rowEnd - midpoint), ' rowstart - midpoint is ', (midpoint - rowStart)
+		#print("midpiont is ", midpoint, ' rowend - midpoint is ', (rowEnd - midpoint), ' rowstart - midpoint is ', (midpoint - rowStart))
 
 		for y in range(colStart-1, colEnd):
 			self.checkForPlayer(((rowInsert*24)+32, (y*24)+32))
@@ -567,7 +567,7 @@ class playfield:
 		return 0
 
 	def debugPaint(self, g,updates=None):
-		#print '../media/fonts/arial.ttf'
+		#print('../media/fonts/arial.ttf')
 		#f = font.Font('../media/fonts/arial.ttf',9)
 		if updates == None:
 			updates = pygame.Rect( (0,0,0,0))

@@ -38,7 +38,7 @@ class Modes_Play (gamemode.Modes_GameMode):
 	def enterMode(self):
 
 		if (self.isPaused == 1):
-			print "unpausing"
+			print("unpausing")
 			self.isPaused = 0
 			return 
 
@@ -49,7 +49,7 @@ class Modes_Play (gamemode.Modes_GameMode):
 		self.myGame.populateField()
 		clock = self.myGame.getGameClock()
 		clock.reset()
-		print "entering play mode"
+		print("entering play mode")
 
 		import supercubeslide.spritetext as spritetext
 		self.textBoard = spritetext.spritetext()
@@ -82,7 +82,7 @@ class Modes_Play (gamemode.Modes_GameMode):
 		rect = score.getSurface().get_rect()
 		position = (616 - rect[2], 52)
 		g.blit( score.getSurface(), position)
-		#print "blitting score, ", score.getSurface().get_rect()
+		#print("blitting score, ", score.getSurface().get_rect())
 		#g.fill( (255, 0, 0), score.getSurface().get_rect())
 		scoreposition = (616 - rect[2], 52, 39, 141)
 
@@ -119,7 +119,7 @@ class Modes_Play (gamemode.Modes_GameMode):
 		#if the clock is empty, add a row to the play field
 		clock = self.myGame.getGameClock()
 		if clock.isClockEmpty():
-			#print "# You should be getting more rows now"
+			#print("# You should be getting more rows now")
 			self.myGame.field.addNewRowOrCol()
 
 		##if the field is dirty, that means
@@ -141,7 +141,7 @@ class Modes_Play (gamemode.Modes_GameMode):
 					self.textBoard.addMessage("Chain x"+ str(self.chain)+ "!")
 					self.myGame.addMessage("Chain x"+ str(self.chain)+ "!")
 				self.myGame.addScore(removedBlocks * self.chain)
-				#print "*** removed %d blocks" % removedBlocks
+				#print("*** removed %d blocks" % removedBlocks)
 			self.removedLastUpdate = removedBlocks
 
 
@@ -153,7 +153,7 @@ class Modes_Play (gamemode.Modes_GameMode):
 
 	def moveSpriteEvent(self):
 		newSprite = self.sprite.processAction(self.field)
-		#print "*** Removing CHAIN! "
+		#print("*** Removing CHAIN! ")
 		self.removedLastUpdate = 0
 		self.chain = 0
 		return newSprite
@@ -166,11 +166,11 @@ class Modes_Play (gamemode.Modes_GameMode):
 
 	def onKey(self,evt):
 		if (evt.type == QUIT):
-			print 'got quit event'
+			print('got quit event')
 			self.isDead = 1
 
 		if ((evt.type == KEYDOWN and evt.key == K_ESCAPE) ):
-			print 'got pause event'
+			print('got pause event')
 			self.isPaused = 1
 		if (evt.type == KEYDOWN and evt.key == K_RIGHT):
 			self.sprite.h_velocity = 1
@@ -203,11 +203,11 @@ class Modes_Play (gamemode.Modes_GameMode):
 
 		if evt.type == MOUSEBUTTONDOWN:
 			if evt.dict['button'] == 4:
-				#print 'Wheel Down'
+				#print('Wheel Down')
 				self.sprite.clockwise_velocity = 1
 				#self.sprite.moveCW(self.field)
 			elif evt.dict['button'] == 5:
-				#print 'Wheel Up'
+				#print('Wheel Up')
 				self.sprite.clockwise_velocity = -1
 				#self.sprite.moveCCW(self.field)
 			elif evt.dict['button'] == 3:

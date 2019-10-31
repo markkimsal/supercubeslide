@@ -33,7 +33,7 @@ class Modes_LevelDone (gamemode.Modes_GameMode):
 		pass
 
 	def enterMode(self):
-		#print "entering level done mode"
+		#print("entering level done mode")
 		pass
 
 	def exitMode(self):
@@ -45,7 +45,7 @@ class Modes_LevelDone (gamemode.Modes_GameMode):
 		pausedScreen = g.convert_alpha()
 		overlayScreen = pygame.Surface( (g.get_width(), g.get_height()),  SRCALPHA).convert_alpha()
 
-		#print "level done paint"
+		#print("level done paint")
 		overlayScreen.fill( (255,255,255, 220), (0,0,800,600))
 		#g.fill( (255,0,255), (self.g_offset_x, self.g_offset_y, self.width, self.height))
 		text = self.myFont.render("Level Done", 1, (0,0,0)  )

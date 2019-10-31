@@ -27,7 +27,7 @@ class spritetext:
 	def update(self, game):
 		g = game.window
 		for m in self.messageList:
-			#print m, m['txt']
+			#print(m, m['txt'])
 			text = self.myFont.render(m['txt'], 100, (150,150,150) )
 			#set the width and height the first time only
 			if (m['x'] ==0):
@@ -41,9 +41,9 @@ class spritetext:
 			#game.window.blit(overlayScreen, (0,0))
 			game.window.blit(text, (m['x'], m['y']))
 			#self.paintedOnce = True
-			#print m
+			#print(m)
 			if (m['tick'] > 100):
-				print "removing last message"
+				print("removing last message")
 				self.messageList.remove(m)
 
 	

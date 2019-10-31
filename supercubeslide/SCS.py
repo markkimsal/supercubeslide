@@ -77,7 +77,7 @@ class SCS_Game:
 
 	def addMessage(self, msg):
 		pass
-		#print msg
+		#print(msg)
 
 	def increaseDifficulty(self):
 		self.difficulty += 1
@@ -103,15 +103,15 @@ class SCS_Game:
 
 		field = self.field
 		field.clearAll()
-		#print "sprite is mobile: ", self.sprite.isMobile
-		#print "sprite x: ", self.sprite.x_pos
+		#print("sprite is mobile: ", self.sprite.isMobile)
+		#print("sprite x: ", self.sprite.x_pos)
 		field.addToGrid(self.sprite, leftCorner-1, upperCorner)
-		#print "sprite x: ", self.sprite.x_pos
+		#print("sprite x: ", self.sprite.x_pos)
 
 		colors = (('red','b'),('green','a'),('orange','c'),('blue','d'))
 		for x in range(leftCorner, leftCorner+wide):
 			for y in range(upperCorner, upperCorner+tall):
-	#			print x ,', ',y
+	#			print(x ,', ',y)
 				set = colors[random.randint(0,3)]
 				block = SCS_sprite(pygame.image.load(getFilename('../media/block_'+set[1]+'.png')),set[0] )
 				field.addToPlayfield(block, (x*24)+32, (y*24)+32)
@@ -129,7 +129,7 @@ class SCS_Game:
 	def addScore(self, num):
 		self.points += num
 		self.getScoreBoard().update()
-		#print "points is now %d ..." % self.points
+		#print("points is now %d ..." % self.points)
 
 	def subScore(self, num):
 		self.points -= num
@@ -156,7 +156,7 @@ class SCS_Game:
 
 if __name__ == '__main__':
 
-	#print 'first time ', SCS_fullpath
+	#print('first time ', SCS_fullpath)
 	run()
 
 
@@ -190,7 +190,7 @@ def run():
 	#currentMode.sprite = sprite
 	newMode = None
 	#pygame.fastevent.init()
-	#print currentMode
+	#print(currentMode)
 	currentMode_onKey = currentMode.onKey
 
 	noop = pygame.locals.NOEVENT
@@ -221,7 +221,7 @@ def run():
 		newMode = currentMode.update(field, window)
 
 		if (newMode == -1):
-			print 'quitting...'
+			print('quitting...')
 			pygame.quit()
 			break
 

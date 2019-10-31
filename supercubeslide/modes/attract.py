@@ -37,7 +37,7 @@ class Modes_Attract (gamemode.Modes_GameMode):
 	def enterMode(self):
 		""" Reset variables
 		"""
-		print "entering attact mode"
+		print("entering attact mode")
 		self.isDead = 0
 		self.isQuit = 0
 		self.isHelp = 0
