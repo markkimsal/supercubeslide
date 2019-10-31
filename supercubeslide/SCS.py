@@ -17,23 +17,23 @@ import sys
 import random
 import time
 
-import playfield
-import timing
-import sprite
-from sprite import SCS_sprite
+import supercubeslide.playfield as playfield
+import supercubeslide.timing    as timing
+import supercubeslide.sprite    as sprinte
+from supercubeslide.sprite import SCS_sprite
 
-import gameclock
-from gameclock import SCS_gameclock
+import supercubeslide.gameclock as gameclock
+from supercubeslide.gameclock import SCS_gameclock
 
-import gamescore
-from gamescore import SCS_gamescore
+import supercubeslide.gamescore as gamescore
+from supercubeslide.gamescore import SCS_gamescore
 
 
 #import supercubeslide.modes
 from supercubeslide.modes import *
 #from supercubeslide.modes import attract
 
-import bgmusic
+import supercubeslide.bgmusic as bgmusic
 
 if hasattr(sys, 'frozen'):
 	SCS_fullpath = os.path.dirname(os.path.abspath(sys.executable))

@@ -7,7 +7,7 @@
 ###########################################################################
 
 import pygame
-import SCS
+from supercubeslide import SCS
 
 class SCS_gameclock():
 

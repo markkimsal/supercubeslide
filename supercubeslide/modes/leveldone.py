@@ -12,8 +12,8 @@ import supercubeslide
 #import SCS
 #import modes
 #from modes import gamemode
-import gamemode
-import playmode
+import supercubeslide.modes.gamemode as gamemode
+#import supercubeslide.modes.playmode as playmode
 from pygame import font
 
 class Modes_LevelDone (gamemode.Modes_GameMode):
@@ -70,7 +70,7 @@ class Modes_LevelDone (gamemode.Modes_GameMode):
 
 		self.myGame.addScore(15)
 		self.myGame.increaseDifficulty()
-		return playmode.Modes_Play(self.myGame)
+		return supercubeslide.modes.playmode.Modes_Play(self.myGame)
 
 	def onKey(self,evt):
 		if (evt.type == KEYDOWN ):

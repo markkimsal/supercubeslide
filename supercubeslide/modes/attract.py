@@ -11,12 +11,10 @@ from pygame import font
 import os
 
 import supercubeslide
-
-import supercubeslide
-import gamemode
-import playmode
-import help
-#import pause
+import supercubeslide.modes.gamemode as gamemode
+import supercubeslide.modes.playmode as playmode
+import supercubeslide.modes.help     as help
+#import supercubeslide.modes.pause    as pause
 
 class Modes_Attract (gamemode.Modes_GameMode):
 

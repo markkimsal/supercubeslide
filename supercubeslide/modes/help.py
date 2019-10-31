@@ -13,7 +13,7 @@ import supercubeslide
 #import SCS
 #import modes
 #from modes import gamemode
-import gamemode
+import supercubeslide.modes.gamemode as gamemode
 
 import supercubeslide.bgmusic
 

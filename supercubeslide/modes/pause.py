@@ -10,7 +10,7 @@ from pygame.locals import *
 
 #import SCS
 import supercubeslide
-import gamemode
+import supercubeslide.modes.gamemode as gamemode
 #from modes import gamemode
 from pygame import font
 

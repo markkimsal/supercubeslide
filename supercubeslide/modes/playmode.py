@@ -14,9 +14,9 @@ import supercubeslide.timing as timing
 #import timing
 #import modes
 #from modes import gamemode
-import gamemode
-import leveldone
-import pause
+import supercubeslide.modes.gamemode as gamemode
+import supercubeslide.modes.leveldone as leveldone
+import supercubeslide.modes.pause as pause
 
 
 class Modes_Play (gamemode.Modes_GameMode):

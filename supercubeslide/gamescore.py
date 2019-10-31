@@ -7,7 +7,7 @@
 ###########################################################################
 
 import pygame
-import SCS
+from supercubeslide import SCS
 import os
 
 class SCS_gamescore():

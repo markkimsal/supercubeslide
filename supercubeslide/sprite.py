@@ -5,8 +5,8 @@
 # Copyright: See LICENSE file that comes with this distribution
 #
 ###########################################################################
-import playfield
-import timing
+from supercubeslide import playfield as playfield
+from supercubeslide import timing as timing
 
 import pygame
 

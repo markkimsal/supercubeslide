@@ -5,10 +5,12 @@
 # Copyright: See LICENSE file that comes with this distribution
 #
 ###########################################################################
-import sprite
-from sprite import SCS_sprite
-from sprite import SCS_magnetSprite
-import SCS
+import supercubeslide.sprite
+from supercubeslide import sprite
+
+from supercubeslide.sprite import SCS_sprite
+from supercubeslide.sprite import SCS_magnetSprite
+from supercubeslide import SCS
 
 import pygame, os
 import numpy

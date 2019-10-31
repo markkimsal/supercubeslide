@@ -12,7 +12,10 @@ import pygame.font
 from pygame.font import Font
 import pygame.cursors
 
-import SCS, os
+import os
+
+from supercubeslide import SCS
+
 
 
 class spritetext:

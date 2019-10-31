@@ -9,7 +9,7 @@
 # See more @ http://modarchive.org/index.php?terms-upload
 
 import pygame
-import SCS
+from supercubeslide import SCS
 import os
 
 songList = [
