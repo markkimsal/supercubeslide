@@ -54,7 +54,6 @@ pub const AttractMode = struct {
 		renderer.copy(textext1, sdl.Rectangle{ .x = 330, .y =  77, .width = text1.ptr.w, .height = text1.ptr.h }, null) catch {};
 		renderer.copy(textext2, sdl.Rectangle{ .x = 330, .y = 127, .width = text2.ptr.w, .height = text2.ptr.h }, null) catch {};
 		renderer.copy(textext3, sdl.Rectangle{ .x = 330, .y = 157, .width = text3.ptr.w, .height = text3.ptr.h }, null) catch {};
-
     }
 
     pub fn exit(self: *AttractMode) void {
@@ -64,8 +63,9 @@ pub const AttractMode = struct {
     }
 
     pub fn on_key(self: *AttractMode, key_event: sdl.KeyboardEvent) bool {
-        if (key_event.keycode == sdl.Keycode.space) {
-            self.next_mode = GameModes.GameModeType.TimedPlay;
+        switch (key_event.keycode) {
+            sdl.Keycode.@"return", sdl.Keycode.space => self.next_mode = GameModes.GameModeType.TimedPlay,
+            else => {},
         }
         return true;
     }
