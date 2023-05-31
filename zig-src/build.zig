@@ -39,6 +39,12 @@ pub fn build(b: *std.Build) void {
     exe.addAnonymousModule("loadingscreen.png", .{
         .source_file = std.build.FileSource.relative("../media/loadingscreen.png"),
     });
+    exe.addAnonymousModule("background.png", .{
+        .source_file = std.build.FileSource.relative("../media/background.png"),
+    });
+    exe.addAnonymousModule("cube_a.png", .{
+        .source_file = std.build.FileSource.relative("../media/block_a.png"),
+    });
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default

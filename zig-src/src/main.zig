@@ -2,12 +2,12 @@ const std = @import("std");
 const sdl = @import("sdl2");
 const PlayField = @import("play_field.zig");
 const AttractMode = @import("modes/attract.zig");
+const TimedPlayMode = @import("modes/timed_play.zig").TimedPlayMode;
 const bgm = @import("bgm.zig");
+const GameModes = @import("modes/game_modes.zig");
+const GameModeType = @import("modes/game_modes.zig").GameModeType;
 
-pub const GameModeType = enum {
-    Attract,
-    Play,
-};
+
 pub fn main() !void {
     try sdl.init(.{
         .video = true,
@@ -34,7 +34,8 @@ pub fn main() !void {
     var renderer = try sdl.createRenderer(window, null, .{ .accelerated = true });
     defer renderer.destroy();
 
-    var game_mode = try AttractMode.AttractMode.init(&renderer);
+    var game_mode: GameModes.GameMode = GameModes.GameMode{.attract = try AttractMode.AttractMode.init(&renderer)};
+    // try game_mode.init(&renderer); //AttractMode.AttractMode.init(&renderer);
 
     mainLoop: while (true) {
         while (sdl.pollEvent()) |ev| {
@@ -52,7 +53,19 @@ pub fn main() !void {
             }
         }
         var next_mode = game_mode.update();
-        _ = next_mode;
+        if (next_mode) | mode_type | {
+            std.log.info("switching to new game mode: {?}", .{@enumToInt(mode_type)});
+            var new_mode = switch(mode_type) {
+                GameModeType.Attract => GameModes.GameMode{.attract = try AttractMode.AttractMode.init(&renderer)},
+                GameModeType.TimedPlay => GameModes.GameMode{.timed_play = try TimedPlayMode.init(&renderer)},
+                // GameModeType.TimedPlay => try AttractMode.AttractMode.init(&renderer),
+            };
+            // new_mode = GameModes.GameMode{.attract = new_mode}
+            defer {
+                game_mode.exit();
+                game_mode = new_mode;
+            }
+        }
 
         try renderer.setColorRGB(0xF7, 0xA4, 0x1D);
         try renderer.clear();
@@ -60,7 +73,7 @@ pub fn main() !void {
         game_mode.paint(&renderer);
         renderer.present();
     }
-    game_mode.on_exit();
+    game_mode.exit();
 }
 
 test "simple test" {

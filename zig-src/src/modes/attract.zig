@@ -1,8 +1,11 @@
+const std = @import("std");
 const sdl = @import("sdl2");
 const MainModule = @import("../main.zig");
+const GameModes = @import("game_modes.zig");
 
 pub const AttractMode = struct {
     background_image: sdl.Texture,
+    next_mode: ?GameModes.GameModeType,
 
     pub fn init(renderer: *sdl.Renderer) !AttractMode {
         const img = @embedFile("loadingscreen.png");
@@ -10,8 +13,9 @@ pub const AttractMode = struct {
             return err;
         };
 
-        return AttractMode{
+        return AttractMode {
             .background_image = texture,
+            .next_mode = null,
         };
     }
 
@@ -27,18 +31,21 @@ pub const AttractMode = struct {
         renderer.setColor(sdl.Color.white) catch {
             return;
         };
-        renderer.fillRect(sdl.Rectangle{.x = 330, .y = 60, .width = 240, .height =120}) catch {
+        renderer.fillRect(sdl.Rectangle{ .x = 330, .y = 60, .width = 240, .height = 120 }) catch {
             return;
         };
     }
 
-    pub fn exit_mode(self: *AttractMode) void {
+    pub fn exit(self: *AttractMode) void {
+
+        std.log.info("attract mode: destroying background", .{});
         self.background_image.destroy();
     }
 
     pub fn on_key(self: *AttractMode, key_event: sdl.KeyboardEvent) bool {
-        _ = self;
-        _ = key_event;
+        if (key_event.keycode == sdl.Keycode.space) {
+            self.next_mode = GameModes.GameModeType.TimedPlay;
+        }
         return true;
     }
 
@@ -46,8 +53,10 @@ pub const AttractMode = struct {
         self.background_image.destroy();
     }
 
-    pub fn update(self: *AttractMode) ?MainModule.GameModeType {
-        _ = self;
+    pub fn update(self: *AttractMode) ?GameModes.GameModeType {
+        if (self.next_mode) |mode| {
+            return mode;
+        }
         return null;
     }
 };
