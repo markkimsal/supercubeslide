@@ -32,6 +32,7 @@ pub fn build(b: *std.Build) void {
     exe.addModule("sdl-native", sdk.getNativeModule());
     exe.linkSystemLibrary("sdl2_image");
     exe.linkSystemLibrary("sdl2_mixer");
+    exe.linkSystemLibrary("sdl2_ttf");
     exe.linkSystemLibrary("jpeg");
     exe.linkSystemLibrary("libpng");
     exe.linkSystemLibrary("tiff");
