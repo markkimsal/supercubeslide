@@ -2,12 +2,13 @@ const std = @import("std");
 const sdl = @import("sdl2");
 const MainModule = @import("../main.zig");
 const GameModes = @import("game_modes.zig");
-const Sprite    = @import("../sprite.zig").Sprite;
+const Sprite = @import("../sprite.zig").Sprite;
+const PlayField = @import("../play_field.zig").PlayField;
 
 pub const TimedPlayMode = struct {
     background_image: sdl.Texture,
     cube_a: sdl.Texture,
-    sprite: Sprite,
+    play_field: PlayField,
     next_mode: ?GameModes.GameModeType,
 
     pub fn init(renderer: *sdl.Renderer) !TimedPlayMode {
@@ -22,11 +23,15 @@ pub const TimedPlayMode = struct {
         var sprite = Sprite.init(cube_texture, 24, 24);
         sprite.setPosition(240, 240);
 
-        return TimedPlayMode {
+        var play_field = PlayField.init(std.heap.c_allocator);
+        play_field.addActor(&sprite) catch {
+            std.log.err("Cannot add sprite to play field", .{});
+        };
+        return TimedPlayMode{
             .background_image = texture,
             .cube_a = cube_texture,
             .next_mode = null,
-            .sprite = sprite,
+            .play_field = play_field,
         };
     }
 
@@ -38,25 +43,30 @@ pub const TimedPlayMode = struct {
     }
 
     pub fn paintActors(self: *TimedPlayMode, renderer: *sdl.Renderer) void {
-        const rect = self.sprite.rect;
-        // renderer.copy(self.cube_a, rect, null) catch {
-        renderer.copy(self.sprite.texture, rect, null) catch {
-            std.log.warn("error", .{});
-        };
+        for (self.play_field.actors.items) |*actor| {
+            const rect = actor.rect;
+            // renderer.copy(self.cube_a, rect, null) catch {
+            renderer.copy(actor.texture, rect, null) catch {
+                std.log.warn("error", .{});
+            };
+        }
     }
 
     pub fn exit(self: *TimedPlayMode) void {
         std.log.info("timed play mode: destroying background", .{});
         self.background_image.destroy();
+        self.play_field.close();
     }
 
     pub fn on_input(self: *TimedPlayMode, event: sdl.Event) bool {
         switch (event) {
             .mouse_wheel => |mouse_event| {
-                if (mouse_event.delta_y > 0) {
-                    self.sprite.moveClockwise();
-                } else {
-                    self.sprite.moveCounterClockwise();
+                for (self.play_field.actors.items) |*actor| {
+                    if (mouse_event.delta_y > 0) {
+                        actor.*.moveClockwise();
+                    } else {
+                        actor.*.moveCounterClockwise();
+                    }
                 }
             },
             else => {},
@@ -65,11 +75,13 @@ pub const TimedPlayMode = struct {
     }
 
     pub fn on_key(self: *TimedPlayMode, key_event: sdl.KeyboardEvent) bool {
-        if (key_event.keycode == sdl.Keycode.left) {
-            self.sprite.moveClockwise();
-        }
-        if (key_event.keycode == sdl.Keycode.right) {
-            self.sprite.moveCounterClockwise();
+        for (self.play_field.actors.items) |*actor| {
+            if (key_event.keycode == sdl.Keycode.left) {
+                actor.*.moveClockwise();
+            }
+            if (key_event.keycode == sdl.Keycode.right) {
+                actor.*.moveCounterClockwise();
+            }
         }
         return true;
     }
