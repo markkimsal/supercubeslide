@@ -2,10 +2,12 @@ const std = @import("std");
 const sdl = @import("sdl2");
 const MainModule = @import("../main.zig");
 const GameModes = @import("game_modes.zig");
+const Sprite    = @import("../sprite.zig").Sprite;
 
 pub const TimedPlayMode = struct {
     background_image: sdl.Texture,
     cube_a: sdl.Texture,
+    sprite: Sprite,
     next_mode: ?GameModes.GameModeType,
 
     pub fn init(renderer: *sdl.Renderer) !TimedPlayMode {
@@ -13,15 +15,18 @@ pub const TimedPlayMode = struct {
         const texture = sdl.image.loadTextureMem(renderer.*, img[0..], sdl.image.ImgFormat.png) catch |err| {
             return err;
         };
-        const cube_a = @embedFile("cube_a.png");
-        const cube_texture = sdl.image.loadTextureMem(renderer.*, cube_a[0..], sdl.image.ImgFormat.png) catch |err| {
+        var cube_a = @embedFile("cube_a.png");
+        var cube_texture = sdl.image.loadTextureMem(renderer.*, cube_a[0..], sdl.image.ImgFormat.png) catch |err| {
             return err;
         };
+        var sprite = Sprite.init(cube_texture, 24, 24);
+        sprite.setPosition(240, 240);
 
         return TimedPlayMode {
             .background_image = texture,
             .cube_a = cube_texture,
             .next_mode = null,
+            .sprite = sprite,
         };
     }
 
@@ -33,8 +38,9 @@ pub const TimedPlayMode = struct {
     }
 
     pub fn paintActors(self: *TimedPlayMode, renderer: *sdl.Renderer) void {
-        const rect = sdl.Rectangle{ .x = 330, .y = 60, .width = 24, .height = 24 };
-        renderer.copy(self.cube_a, rect, null) catch {
+        const rect = self.sprite.rect;
+        // renderer.copy(self.cube_a, rect, null) catch {
+        renderer.copy(self.sprite.texture, rect, null) catch {
             std.log.warn("error", .{});
         };
     }
@@ -44,12 +50,27 @@ pub const TimedPlayMode = struct {
         self.background_image.destroy();
     }
 
+    pub fn on_input(self: *TimedPlayMode, event: sdl.Event) bool {
+        switch (event) {
+            .mouse_wheel => |mouse_event| {
+                if (mouse_event.delta_y > 0) {
+                    self.sprite.moveClockwise();
+                } else {
+                    self.sprite.moveCounterClockwise();
+                }
+            },
+            else => {},
+        }
+        return true;
+    }
+
     pub fn on_key(self: *TimedPlayMode, key_event: sdl.KeyboardEvent) bool {
-        _ = self;
-        _ = key_event;
-        // if (key_event.keycode == sdl.Keycode.space) {
-        //     self.next_mode = GameModes.GameModeType.TimedPlay;
-        // }
+        if (key_event.keycode == sdl.Keycode.left) {
+            self.sprite.moveClockwise();
+        }
+        if (key_event.keycode == sdl.Keycode.right) {
+            self.sprite.moveCounterClockwise();
+        }
         return true;
     }
 

@@ -49,6 +49,12 @@ pub fn main() !void {
                     _ = consumed;
                     {}
                 },
+                .mouse_wheel => |event| {
+                    _ = event;
+                    var consumed = game_mode.on_input(ev);
+                    _ = consumed;
+                    {}
+                },
                 else => {},
             }
         }
@@ -65,6 +71,7 @@ pub fn main() !void {
                 game_mode.exit();
                 game_mode = new_mode;
             }
+            continue :mainLoop;
         }
 
         try renderer.setColorRGB(0xF7, 0xA4, 0x1D);

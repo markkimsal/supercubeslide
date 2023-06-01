@@ -35,6 +35,12 @@ pub const GameMode = union(enum) {
             inline else => |*case| return case.on_key(key_event),
         }
     }
+    pub fn on_input(self: *Self, event: sdl.Event) bool {
+        switch (self.*) {
+            inline else => |*case| return case.on_input(event),
+        }
+    }
+
     pub fn update(self: *Self) ?GameModeType {
         switch (self.*) {
             inline else => |*case| return case.update(),

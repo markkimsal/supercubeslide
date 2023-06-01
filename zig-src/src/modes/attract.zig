@@ -70,6 +70,12 @@ pub const AttractMode = struct {
         return true;
     }
 
+    pub fn on_input(self: AttractMode, event: sdl.Event) bool {
+        _ = self;
+        _ = event;
+        return true;
+    }
+
     pub fn update(self: *AttractMode) ?GameModes.GameModeType {
         if (self.next_mode) |mode| {
             return mode;
