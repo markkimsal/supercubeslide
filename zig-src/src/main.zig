@@ -6,7 +6,7 @@ const TimedPlayMode = @import("modes/timed_play.zig").TimedPlayMode;
 const bgm = @import("bgm.zig");
 const GameModes = @import("modes/game_modes.zig");
 const GameModeType = @import("modes/game_modes.zig").GameModeType;
-
+const SpriteMod = @import("sprite.zig");
 
 pub fn main() !void {
     try sdl.init(.{
@@ -28,14 +28,17 @@ pub fn main() !void {
 
     bgm.start_song(0);
     defer bgm.close();
-    const play_field = PlayField.PlayField.init();
-    _ = play_field;
 
     var renderer = try sdl.createRenderer(window, null, .{ .accelerated = true });
     defer renderer.destroy();
 
-    var game_mode: GameModes.GameMode = GameModes.GameMode{.attract = try AttractMode.AttractMode.init(&renderer)};
-    // try game_mode.init(&renderer); //AttractMode.AttractMode.init(&renderer);
+    SpriteMod.initTextures(&renderer) catch |err| {
+        std.log.err("{}", .{err});
+        return;
+    };
+
+    var game_mode: GameModes.GameMode = GameModes.GameMode{ .attract = try AttractMode.AttractMode.init(&renderer) };
+    // var game_mode: GameModes.GameMode = GameModes.GameMode{ .timed_play = try TimedPlayMode.init(&renderer) };
 
     mainLoop: while (true) {
         while (sdl.pollEvent()) |ev| {
@@ -59,11 +62,11 @@ pub fn main() !void {
             }
         }
         var next_mode = game_mode.update();
-        if (next_mode) | mode_type | {
+        if (next_mode) |mode_type| {
             std.log.info("switching to new game mode: {?}", .{@enumToInt(mode_type)});
-            var new_mode = switch(mode_type) {
-                GameModeType.Attract => GameModes.GameMode{.attract = try AttractMode.AttractMode.init(&renderer)},
-                GameModeType.TimedPlay => GameModes.GameMode{.timed_play = try TimedPlayMode.init(&renderer)},
+            var new_mode = switch (mode_type) {
+                GameModeType.Attract => GameModes.GameMode{ .attract = try AttractMode.AttractMode.init(&renderer) },
+                GameModeType.TimedPlay => GameModes.GameMode{ .timed_play = try TimedPlayMode.init(&renderer) },
                 // GameModeType.TimedPlay => try AttractMode.AttractMode.init(&renderer),
             };
             // new_mode = GameModes.GameMode{.attract = new_mode}
@@ -81,6 +84,7 @@ pub fn main() !void {
         renderer.present();
     }
     game_mode.exit();
+    sdl.c.SDL_DestroyWindow(window.ptr);
 }
 
 test "simple test" {

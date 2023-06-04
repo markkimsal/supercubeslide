@@ -3,12 +3,17 @@ const sdl = @import("sdl2");
 const MainModule = @import("../main.zig");
 const GameModes = @import("game_modes.zig");
 const Sprite = @import("../sprite.zig").Sprite;
+const BlockTextureTags = @import("../sprite.zig").BlockTextureTags;
 const PlayField = @import("../play_field.zig").PlayField;
+const FieldContainer = @import("../play_field.zig").FieldContainer;
 
+const heap_alloc = std.heap.c_allocator;
 pub const TimedPlayMode = struct {
     background_image: sdl.Texture,
     cube_a: sdl.Texture,
     play_field: PlayField,
+    play_field_offset_x: c_int = 150,
+    play_field_offset_y: c_int = 120,
     next_mode: ?GameModes.GameModeType,
 
     pub fn init(renderer: *sdl.Renderer) !TimedPlayMode {
@@ -20,13 +25,14 @@ pub const TimedPlayMode = struct {
         var cube_texture = sdl.image.loadTextureMem(renderer.*, cube_a[0..], sdl.image.ImgFormat.png) catch |err| {
             return err;
         };
-        var sprite = Sprite.init(cube_texture, 24, 24);
+        var sprite = Sprite.init(BlockTextureTags.A, 24, 24);
         sprite.setPosition(240, 240);
 
-        var play_field = PlayField.init(std.heap.c_allocator);
+        var play_field = PlayField.init(heap_alloc).?;
         play_field.addActor(&sprite) catch {
             std.log.err("Cannot add sprite to play field", .{});
         };
+        play_field.populateField(renderer);
         return TimedPlayMode{
             .background_image = texture,
             .cube_a = cube_texture,
@@ -42,12 +48,27 @@ pub const TimedPlayMode = struct {
         self.paintActors(renderer);
     }
 
-    pub fn paintActors(self: *TimedPlayMode, renderer: *sdl.Renderer) void {
+    pub fn paintActors(self: TimedPlayMode, renderer: *sdl.Renderer) void {
+        for (0..10) |x| {
+            var field_line = self.play_field.field.get(@intCast(u32, x));
+            if (field_line) |*arra| {
+                for (0..10) |y| {
+                    var actor = arra.*[y];
+                    var rect = actor.rect;
+                    rect.x += self.play_field_offset_x; // playfield centering on background
+                    rect.y += self.play_field_offset_y; // playfield centering on background
+                    renderer.copy(actor.getTexture(), rect, null) catch {
+                        std.log.err("error copying field cube to renderer", .{});
+                    };
+                }
+            }
+        }
+
         for (self.play_field.actors.items) |*actor| {
             const rect = actor.rect;
             // renderer.copy(self.cube_a, rect, null) catch {
-            renderer.copy(actor.texture, rect, null) catch {
-                std.log.warn("error", .{});
+            renderer.copy(actor.getTexture(), rect, null) catch {
+                std.log.err("error copying actor to renderer", .{});
             };
         }
     }
