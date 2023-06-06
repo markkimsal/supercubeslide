@@ -50,17 +50,14 @@ pub const TimedPlayMode = struct {
 
     pub fn paintActors(self: TimedPlayMode, renderer: *sdl.Renderer) void {
         for (0..10) |x| {
-            var field_line = self.play_field.field.get(@intCast(u32, x));
-            if (field_line) |*arra| {
-                for (0..10) |y| {
-                    var actor = arra.*[y];
-                    var rect = actor.rect;
-                    rect.x += self.play_field_offset_x; // playfield centering on background
-                    rect.y += self.play_field_offset_y; // playfield centering on background
-                    renderer.copy(actor.getTexture(), rect, null) catch {
-                        std.log.err("error copying field cube to renderer", .{});
-                    };
-                }
+            for (0..10) |y| {
+                var actor = self.play_field.field[x][y].*;
+                var rect = actor.rect;
+                rect.x += self.play_field_offset_x; // playfield centering on background
+                rect.y += self.play_field_offset_y; // playfield centering on background
+                renderer.copy(actor.getTexture(), rect, null) catch {
+                    std.log.err("error copying field cube to renderer", .{});
+                };
             }
         }
 

@@ -30,6 +30,24 @@ pub fn closeTextures() void {
     block_textures[1].destroy();
 }
 
+var sprite_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+// const sprite_allocator = @ptrCast(*heap.arena_allocator.ArenaAllocator, sprite_arena.allocator());
+// var sprite_allocator = @ptrCast(*std.heap.arena_allocator.ArenaAllocator, &sprite_arena.allocator());
+const sprite_allocator = sprite_arena.allocator();
+
+pub fn clearSprites() void {
+    std.log.info("clearing sprite arena", .{});
+    sprite_arena.deinit();
+}
+
+pub fn genSprite(tex_tag: BlockTextureTags, x_size: i32, y_size: i32) ?*Sprite {
+    var s: *Sprite = sprite_allocator.create(Sprite) catch {
+        return null;
+    };
+    s.* = Sprite.init(tex_tag, x_size, y_size);
+    return s;
+}
+
 pub const Sprite = struct {
     const Self = @This();
 
