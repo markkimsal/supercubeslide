@@ -16,6 +16,8 @@ var field: FieldContainer = undefined;
 pub const PlayField = struct {
     width: u8,
     height: u8,
+    band_width: u8,
+    band_height: u8,
     x_size: u8,
     y_size: u8,
     actors: std.ArrayList(Sprite),
@@ -24,13 +26,15 @@ pub const PlayField = struct {
     alligator: std.mem.Allocator,
     field: FieldContainer,
 
-    pub fn init(alligator: std.mem.Allocator) ?PlayField {
+    pub fn init(alligator: std.mem.Allocator, band_w: u8, band_h: u8) ?PlayField {
         // var immobiles = std.ArrayList(Sprite).init(alligator);
         return PlayField{
             .width = 18,
             .height = 18,
             .x_size = 24,
             .y_size = 24,
+            .band_width = band_w,
+            .band_height = band_h,
             .actors = std.ArrayList(Sprite).init(alligator),
             // .immobiles = immobiles,
             .is_dirty = false,
@@ -42,9 +46,9 @@ pub const PlayField = struct {
     pub fn populateField(self: *PlayField, renderer: *sdl.Renderer) void {
         _ = renderer;
 
-        for (0..self.height) |y| {
+        for (0..self.band_height) |y| {
             var xx = @intCast(i32, y);
-            for (0..self.width) |x| {
+            for (0..self.band_width) |x| {
                 var yy = @intCast(i32, x);
                 {
                     if (x % 4 == 0) {
@@ -70,5 +74,15 @@ pub const PlayField = struct {
 
     pub fn addActor(self: *PlayField, sprite: *Sprite) !void {
         try self.actors.append(sprite.*);
+        self.snapToBand(sprite);
+    }
+
+    // move the actor sprite to the outside of the block band
+    // we refer to the actor sprite in coords relative to the grid
+    // so -1, -1 being the upper most right and
+    // band_width +1, band_height +1, being the bottom right
+    fn snapToBand(self: *PlayField, sprite: *Sprite) void {
+        _ = self;
+        sprite.setPosition(0, 0);
     }
 };

@@ -71,10 +71,12 @@ pub const Sprite = struct {
     }
 
     pub fn moveClockwise(self: *Self) void {
-        self.rect.x -= self.rect.width;
+        // self.rect.x -= self.rect.width;
+        self.rect.x -= 1;
     }
 
     pub fn moveCounterClockwise(self: *Self) void {
-        self.rect.x += self.rect.width;
+        // self.rect.x += self.rect.width;
+        self.rect.x += 1;
     }
 };

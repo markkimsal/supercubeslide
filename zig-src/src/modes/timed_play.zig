@@ -26,9 +26,9 @@ pub const TimedPlayMode = struct {
             return err;
         };
         var sprite = Sprite.init(BlockTextureTags.A, 24, 24);
-        sprite.setPosition(240, 240);
+        sprite.setPosition(-1, -1);
 
-        var play_field = PlayField.init(heap_alloc).?;
+        var play_field = PlayField.init(heap_alloc, 5, 5).?;
         play_field.addActor(&sprite) catch {
             std.log.err("Cannot add sprite to play field", .{});
         };
@@ -46,11 +46,12 @@ pub const TimedPlayMode = struct {
             return;
         };
         self.paintActors(renderer);
+        self.paintBand(renderer);
     }
 
     pub fn paintActors(self: TimedPlayMode, renderer: *sdl.Renderer) void {
-        for (0..10) |x| {
-            for (0..10) |y| {
+        for (0..self.play_field.band_height) |x| {
+            for (0..self.play_field.band_width) |y| {
                 var actor = self.play_field.field[x][y].*;
                 var rect = actor.rect;
                 rect.x += self.play_field_offset_x; // playfield centering on background
@@ -62,12 +63,24 @@ pub const TimedPlayMode = struct {
         }
 
         for (self.play_field.actors.items) |*actor| {
-            const rect = actor.rect;
+            var rect = actor.rect;
+            // translate from relative coords to screen coordinates
+
+            rect.x *= self.play_field.x_size; // playfield centering on background
+            rect.y *= self.play_field.y_size; // playfield centering on background
+
+            rect.x += self.play_field_offset_x; // playfield centering on background
+            rect.y += self.play_field_offset_y; // playfield centering on background
+
             // renderer.copy(self.cube_a, rect, null) catch {
             renderer.copy(actor.getTexture(), rect, null) catch {
                 std.log.err("error copying actor to renderer", .{});
             };
         }
+    }
+
+    pub fn paintBand(self: TimedPlayMode, renderer: *sdl.Renderer) void {
+        renderer.drawRect(sdl.Rectangle{ .width = self.play_field.band_width * 24, .height = self.play_field.band_height * 24, .x = self.play_field_offset_x, .y = self.play_field_offset_y }) catch {};
     }
 
     pub fn exit(self: *TimedPlayMode) void {
@@ -81,9 +94,11 @@ pub const TimedPlayMode = struct {
             .mouse_wheel => |mouse_event| {
                 for (self.play_field.actors.items) |*actor| {
                     if (mouse_event.delta_y > 0) {
-                        actor.*.moveClockwise();
+                        self.moveCounterClockwise(actor);
+                        // actor.*.moveClockwise();
                     } else {
-                        actor.*.moveCounterClockwise();
+                        self.moveClockwise(actor);
+                        // actor.*.moveCounterClockwise();
                     }
                 }
             },
@@ -109,5 +124,57 @@ pub const TimedPlayMode = struct {
             return mode;
         }
         return null;
+    }
+
+    fn moveClockwise(self: TimedPlayMode, actor: *Sprite) void {
+        var rect = actor.rect;
+        if (rect.y == self.play_field.band_height and (rect.x > -1)) {
+            rect.x -= 1;
+            actor.*.rect = rect;
+            return;
+        }
+
+        if (rect.x == self.play_field.band_width and (rect.y < self.play_field.band_height + 1)) {
+            rect.y += 1;
+            actor.*.rect = rect;
+            return;
+        }
+
+        if (rect.x == -1 and (rect.y > -1)) {
+            rect.y -= 1;
+            actor.*.rect = rect;
+            return;
+        }
+
+        if (rect.y == -1 and (rect.x < self.play_field.band_width + 1)) {
+            rect.x += 1;
+            actor.*.rect = rect;
+            return;
+        }
+    }
+
+    fn moveCounterClockwise(self: TimedPlayMode, actor: *Sprite) void {
+        var rect = actor.rect;
+        if (rect.y == -1 and (rect.x > -1)) {
+            rect.x -= 1;
+            actor.*.rect = rect;
+            return;
+        }
+        if (rect.x == self.play_field.band_width and (rect.y > -1)) {
+            rect.y -= 1;
+            actor.*.rect = rect;
+            return;
+        }
+
+        if (rect.y == self.play_field.band_height and (rect.x < self.play_field.band_width + 1)) {
+            rect.x += 1;
+            actor.*.rect = rect;
+            return;
+        }
+        if (rect.x == -1 and (rect.y < self.play_field.band_height)) {
+            rect.y += 1;
+            actor.*.rect = rect;
+            return;
+        }
     }
 };
