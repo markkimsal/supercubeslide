@@ -11,28 +11,24 @@ const Song = struct {
     homepage: [*]const u8,
 };
 
-var song_list: [3]Song = [3]Song{
-Song{
+var song_list: [3]Song = [3]Song{ Song{
     .filename = "8bit_party.it",
     .title = "8Bit Party",
     .artist = "Line",
     .homepage = "http://modarchive.org/index.php?request=view_by_moduleid&query=162286",
-},
-Song{
+}, Song{
     .filename = "1_channel_moog.it",
     .title = "Channel Moog",
     .artist = "Manwe",
     .homepage = "http://modarchive.org/index.php?request=view_by_moduleid&query=158975",
-},
-Song{
+}, Song{
     .filename = "a--fchip.it",
     .title = "Friend(Chip)",
     .artist = "AquaLife",
     .homepage = "http://modarchive.org/index.php?request=view_by_moduleid&query=32414",
-}
-};
+} };
 
-var curr_song : ?*mixer.Mix_Music = null;
+var curr_song: ?*mixer.Mix_Music = null;
 
 pub fn start_song(song_index: usize) void {
     std.log.info(" song index {}", .{song_index});
@@ -46,13 +42,22 @@ pub fn start_song(song_index: usize) void {
     var buffer = [_]u8{undefined} ** 100;
     const printed = std.fmt.bufPrint(&buffer, "../media/music/{s}", .{filename}) catch "out-of-memory";
     curr_song = mixer.Mix_LoadMUS(@ptrCast([*c]const u8, printed));
-    if (curr_song) | s | {
+    if (curr_song) |s| {
         _ = s;
-        var yes = mixer.Mix_PlayMusic(curr_song.?, 1);
+        var yes = mixer.Mix_PlayMusic(curr_song.?, 0);
         std.log.info("yes {}", .{yes});
         _ = music;
-    } else{
+    } else {
         std.log.err("cannot load song: {s}", .{mixer.SDL_GetError()});
+    }
+}
+
+pub fn pause_music() void {
+    std.log.info("pause music", .{});
+    if (mixer.Mix_PlayingMusic() != 0) {
+        _ = mixer.Mix_HaltMusic();
+    } else {
+        start_song(0);
     }
 }
 

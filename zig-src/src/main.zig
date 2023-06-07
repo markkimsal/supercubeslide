@@ -8,6 +8,7 @@ const GameModes = @import("modes/game_modes.zig");
 const GameModeType = @import("modes/game_modes.zig").GameModeType;
 const SpriteMod = @import("sprite.zig");
 
+var current_song_index: usize = 0;
 pub fn main() !void {
     try sdl.init(.{
         .video = true,
@@ -26,7 +27,7 @@ pub fn main() !void {
     );
     defer window.destroy();
 
-    bgm.start_song(0);
+    bgm.start_song(current_song_index);
     defer bgm.close();
 
     var renderer = try sdl.createRenderer(window, null, .{ .accelerated = true });
@@ -42,23 +43,29 @@ pub fn main() !void {
 
     mainLoop: while (true) {
         while (sdl.pollEvent()) |ev| {
-            switch (ev) {
+            const consumed: bool = switch (ev) {
                 .quit => break :mainLoop,
-                .key_down => |event| {
+                .key_down => |event| sw_blk: {
                     std.log.info("{}", .{event.keycode});
                     if (event.keycode == sdl.Keycode.escape) break :mainLoop;
                     if (event.keycode == sdl.Keycode.q) break :mainLoop;
-                    var consumed = game_mode.on_key(event);
-                    _ = consumed;
-                    {}
+                    const consumed = game_mode.on_key(event);
+                    break :sw_blk consumed;
                 },
-                .mouse_wheel => |event| {
+                .mouse_wheel => |event| sw_blk: {
                     _ = event;
-                    var consumed = game_mode.on_input(ev);
-                    _ = consumed;
-                    {}
+                    const consumed = game_mode.on_input(ev);
+                    break :sw_blk consumed;
                 },
-                else => {},
+                else => false,
+            };
+            if (!consumed) {
+                switch (ev) {
+                    .key_down => |event| {
+                        global_on_key(event);
+                    },
+                    else => {},
+                }
             }
         }
         var next_mode = game_mode.update();
@@ -85,6 +92,19 @@ pub fn main() !void {
     }
     game_mode.exit();
     sdl.c.SDL_DestroyWindow(window.ptr);
+}
+
+fn global_on_key(event: sdl.KeyboardEvent) void {
+    if (event.keycode == sdl.Keycode.m) {
+        bgm.pause_music();
+    }
+    if (event.keycode == sdl.Keycode.n) {
+        current_song_index += 1;
+        if (current_song_index > 2) {
+            current_song_index = 0;
+        }
+        bgm.start_song(current_song_index);
+    }
 }
 
 test "simple test" {

@@ -16,7 +16,7 @@ pub const AttractMode = struct {
         try sdl.ttf.init();
         const font = try sdl.ttf.openFont("../media/freesansbold.ttf", 20);
 
-        return AttractMode {
+        return AttractMode{
             .background_image = texture,
             .next_mode = null,
             .font = font,
@@ -39,21 +39,26 @@ pub const AttractMode = struct {
         };
 
         var text1 = try self.font.renderTextSolid("Press [ENTER] to start.", sdl.Color.black);
-		var text2 = try self.font.renderTextSolid("[N] for Next song", sdl.Color.black);
-		var text3 = try self.font.renderTextSolid("[H] for Help", sdl.Color.black);
+        var text2 = try self.font.renderTextSolid("[N] Next Song", sdl.Color.black);
+        var text4 = try self.font.renderTextSolid("[M] Mute Music ", sdl.Color.black);
+        var text3 = try self.font.renderTextSolid("[H] for Help", sdl.Color.black);
         defer text1.destroy();
         defer text2.destroy();
         defer text3.destroy();
-        var textext1 = try sdl.createTextureFromSurface(renderer.*,text1);
-        var textext2 = try sdl.createTextureFromSurface(renderer.*,text2);
-        var textext3 = try sdl.createTextureFromSurface(renderer.*,text3);
+        defer text4.destroy();
+        var textext1 = try sdl.createTextureFromSurface(renderer.*, text1);
+        var textext2 = try sdl.createTextureFromSurface(renderer.*, text2);
+        var textext3 = try sdl.createTextureFromSurface(renderer.*, text3);
+        var textext4 = try sdl.createTextureFromSurface(renderer.*, text4);
         defer textext1.destroy();
         defer textext2.destroy();
         defer textext3.destroy();
+        defer textext4.destroy();
 
-		renderer.copy(textext1, sdl.Rectangle{ .x = 330, .y =  77, .width = text1.ptr.w, .height = text1.ptr.h }, null) catch {};
-		renderer.copy(textext2, sdl.Rectangle{ .x = 330, .y = 127, .width = text2.ptr.w, .height = text2.ptr.h }, null) catch {};
-		renderer.copy(textext3, sdl.Rectangle{ .x = 330, .y = 157, .width = text3.ptr.w, .height = text3.ptr.h }, null) catch {};
+        renderer.copy(textext1, sdl.Rectangle{ .x = 330, .y = 77, .width = text1.ptr.w, .height = text1.ptr.h }, null) catch {};
+        renderer.copy(textext2, sdl.Rectangle{ .x = 330, .y = 117, .width = text2.ptr.w, .height = text2.ptr.h }, null) catch {};
+        renderer.copy(textext4, sdl.Rectangle{ .x = 330, .y = 142, .width = text4.ptr.w, .height = text4.ptr.h }, null) catch {};
+        renderer.copy(textext3, sdl.Rectangle{ .x = 330, .y = 167, .width = text3.ptr.w, .height = text3.ptr.h }, null) catch {};
     }
 
     pub fn exit(self: *AttractMode) void {
@@ -63,11 +68,13 @@ pub const AttractMode = struct {
     }
 
     pub fn on_key(self: *AttractMode, key_event: sdl.KeyboardEvent) bool {
-        switch (key_event.keycode) {
-            sdl.Keycode.@"return", sdl.Keycode.space => self.next_mode = GameModes.GameModeType.TimedPlay,
-            else => {},
-        }
-        return true;
+        return switch (key_event.keycode) {
+            sdl.Keycode.@"return", sdl.Keycode.space => {
+                self.next_mode = GameModes.GameModeType.TimedPlay;
+                return true;
+            },
+            else => false,
+        };
     }
 
     pub fn on_input(self: AttractMode, event: sdl.Event) bool {
