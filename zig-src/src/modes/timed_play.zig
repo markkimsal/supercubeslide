@@ -28,17 +28,19 @@ pub const TimedPlayMode = struct {
         var sprite = Sprite.init(BlockTextureTags.A, 24, 24);
         sprite.setPosition(-1, -1);
 
-        var play_field = PlayField.init(heap_alloc, 5, 5).?;
+        var play_field = PlayField.init(heap_alloc, 15, 15).?;
         play_field.addActor(&sprite) catch {
             std.log.err("Cannot add sprite to play field", .{});
         };
         play_field.populateField(renderer);
-        return TimedPlayMode{
+        var play_mode = TimedPlayMode{
             .background_image = texture,
             .cube_a = cube_texture,
             .next_mode = null,
             .play_field = play_field,
         };
+        play_mode.recenterPlayField();
+        return play_mode;
     }
 
     pub fn paint(self: *TimedPlayMode, renderer: *sdl.Renderer) void {
@@ -84,7 +86,7 @@ pub const TimedPlayMode = struct {
     }
 
     pub fn paintBand(self: TimedPlayMode, renderer: *sdl.Renderer) void {
-        renderer.drawRect(sdl.Rectangle{ .width = self.play_field.band_width * 24, .height = self.play_field.band_height * 24, .x = self.play_field_offset_x, .y = self.play_field_offset_y }) catch {};
+        renderer.drawRect(sdl.Rectangle{ .width = @intCast(c_int, self.play_field.band_width) * 24, .height = @intCast(c_int, self.play_field.band_height) * 24, .x = self.play_field_offset_x, .y = self.play_field_offset_y }) catch {};
     }
 
     pub fn exit(self: *TimedPlayMode) void {
@@ -121,9 +123,16 @@ pub const TimedPlayMode = struct {
             }
             if (key_event.keycode == sdl.Keycode.d) {
                 self.play_field.removeRow();
+                self.recenterPlayField();
             }
         }
         return true;
+    }
+
+    // graphical area is around 600 x 600
+    fn recenterPlayField(self: *TimedPlayMode) void {
+        self.play_field_offset_x = (272 - @divFloor(@intCast(c_int, self.play_field.band_width) * 24, 2));
+        self.play_field_offset_y = (232 - @divFloor(@intCast(c_int, self.play_field.band_height) * 24, 2));
     }
 
     pub fn update(self: *TimedPlayMode) ?GameModes.GameModeType {

@@ -68,9 +68,9 @@ pub const PlayField = struct {
 
     pub fn removeRow(self: *PlayField) void {
         var row_index: usize = 2;
-        // for (0..self.band_width) |x| {
-        //     self.field[row_index][x] = undefined;
-        // }
+        if (self.band_height <= row_index) {
+            row_index = self.band_height - 1;
+        }
         // move pointers up
         for (row_index + 1..self.band_height) |y| {
             for (0..self.band_width) |x| {
@@ -95,6 +95,15 @@ pub const PlayField = struct {
         }
     }
 
+    // move the actor sprite to the outside of the block band
+    // we refer to the actor sprite in coords relative to the grid
+    // so -1, -1 being the upper most right and
+    // band_width +1, band_height +1, being the bottom right
+    fn snapToBand(self: *PlayField, sprite: *Sprite) void {
+        _ = self;
+        sprite.setPosition(0, 0);
+    }
+
     pub fn close(self: *PlayField) void {
         self.*.actors.deinit();
         clearSprites();
@@ -104,14 +113,5 @@ pub const PlayField = struct {
     pub fn addActor(self: *PlayField, sprite: *Sprite) !void {
         try self.actors.append(sprite.*);
         self.snapToBand(sprite);
-    }
-
-    // move the actor sprite to the outside of the block band
-    // we refer to the actor sprite in coords relative to the grid
-    // so -1, -1 being the upper most right and
-    // band_width +1, band_height +1, being the bottom right
-    fn snapToBand(self: *PlayField, sprite: *Sprite) void {
-        _ = self;
-        sprite.setPosition(0, 0);
     }
 };
