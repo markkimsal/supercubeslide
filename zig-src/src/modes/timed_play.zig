@@ -50,10 +50,14 @@ pub const TimedPlayMode = struct {
     }
 
     pub fn paintActors(self: TimedPlayMode, renderer: *sdl.Renderer) void {
-        for (0..self.play_field.band_height) |x| {
-            for (0..self.play_field.band_width) |y| {
-                var actor = self.play_field.field[x][y].*;
+        for (0..self.play_field.band_height) |y| {
+            for (0..self.play_field.band_width) |x| {
+                var actor = self.play_field.field[y][x].*;
                 var rect = actor.rect;
+
+                rect.x *= self.play_field.x_size; // translate coords into pixels
+                rect.y *= self.play_field.y_size; // translate coords into pixels
+
                 rect.x += self.play_field_offset_x; // playfield centering on background
                 rect.y += self.play_field_offset_y; // playfield centering on background
                 renderer.copy(actor.getTexture(), rect, null) catch {
@@ -114,6 +118,9 @@ pub const TimedPlayMode = struct {
             }
             if (key_event.keycode == sdl.Keycode.right) {
                 actor.*.moveCounterClockwise();
+            }
+            if (key_event.keycode == sdl.Keycode.d) {
+                self.play_field.removeRow();
             }
         }
         return true;

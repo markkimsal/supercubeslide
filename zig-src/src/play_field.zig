@@ -47,9 +47,9 @@ pub const PlayField = struct {
         _ = renderer;
 
         for (0..self.band_height) |y| {
-            var xx = @intCast(i32, y);
+            var yy = @intCast(i32, y);
             for (0..self.band_width) |x| {
-                var yy = @intCast(i32, x);
+                var xx = @intCast(i32, x);
                 {
                     if (x % 4 == 0) {
                         self.field[y][x] = genSprite(BlockTextureTags.A, 24, 24).?;
@@ -60,8 +60,37 @@ pub const PlayField = struct {
                     } else {
                         self.field[y][x] = genSprite(BlockTextureTags.B, 24, 24).?;
                     }
-                    self.field[y][x].setPosition(24 * xx, 24 * yy);
+                    self.field[y][x].setPosition(xx, yy);
                 }
+            }
+        }
+    }
+
+    pub fn removeRow(self: *PlayField) void {
+        var row_index: usize = 2;
+        // for (0..self.band_width) |x| {
+        //     self.field[row_index][x] = undefined;
+        // }
+        // move pointers up
+        for (row_index + 1..self.band_height) |y| {
+            for (0..self.band_width) |x| {
+                // self.field[y][x].*.setPosition(@intCast(i32, x), @intCast(i32, y));
+                self.field[y - 1][x] = self.field[y][x];
+                self.field[y - 1][x].setPosition(@intCast(i32, x), @intCast(i32, (y - 1)));
+            }
+        }
+        for (0..self.band_width) |x| {
+            self.field[self.band_height][x] = undefined;
+        }
+        self.snapActorToBand(self.band_height - 1);
+        self.band_height -= 1;
+    }
+
+    fn snapActorToBand(self: PlayField, new_height: c_int) void {
+        for (self.actors.items) |*actor| {
+            // if the actor is at the current, about to be shrunk y
+            if (actor.rect.y == self.band_height) {
+                actor.rect.y = new_height;
             }
         }
     }
