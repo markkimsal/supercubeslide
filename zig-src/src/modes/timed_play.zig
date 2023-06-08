@@ -109,7 +109,7 @@ pub const TimedPlayMode = struct {
                 }
             },
             .mouse_button_down => |mouse_event| {
-                if (mouse_event.button == sdl.MouseButton.middle) {
+                if (mouse_event.button == sdl.MouseButton.middle or mouse_event.button == sdl.MouseButton.left) {
                     self.play_field.moveActor();
                 }
             },
@@ -119,25 +119,30 @@ pub const TimedPlayMode = struct {
     }
 
     pub fn on_key(self: *TimedPlayMode, key_event: sdl.KeyboardEvent) bool {
+        var keymatch = false;
         for (self.play_field.actors.items) |*actor| {
             if (key_event.keycode == sdl.Keycode.left) {
                 self.moveCounterClockwise(actor);
                 // actor.*.moveClockwise();
+                keymatch = true;
             }
             if (key_event.keycode == sdl.Keycode.right) {
                 self.moveClockwise(actor);
                 // actor.*.moveCounterClockwise();
+                keymatch = true;
             }
             if (key_event.keycode == sdl.Keycode.space) {
                 self.play_field.moveActor();
+                keymatch = true;
             }
 
             if (key_event.keycode == sdl.Keycode.d) {
                 self.play_field.removeRow();
                 self.recenterPlayField();
+                keymatch = true;
             }
         }
-        return true;
+        return keymatch;
     }
 
     // graphical area is around 600 x 600
