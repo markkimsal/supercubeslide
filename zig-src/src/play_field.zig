@@ -14,29 +14,22 @@ const FieldContainer = [play_field_height][play_field_width]*Sprite;
 var field: FieldContainer = undefined;
 
 pub const PlayField = struct {
-    width: u8,
-    height: u8,
+    max_width: u8 = 18,
+    max_height: u8 = 18,
+    x_size: u8 = 24,
+    y_size: u8 = 24,
     band_width: u8,
     band_height: u8,
-    x_size: u8,
-    y_size: u8,
     actors: std.ArrayList(Sprite),
-    // immobiles: std.ArrayList(Sprite),
     is_dirty: bool,
     alligator: std.mem.Allocator,
     field: FieldContainer,
 
     pub fn init(alligator: std.mem.Allocator, band_w: u8, band_h: u8) ?PlayField {
-        // var immobiles = std.ArrayList(Sprite).init(alligator);
         return PlayField{
-            .width = 18,
-            .height = 18,
-            .x_size = 24,
-            .y_size = 24,
             .band_width = band_w,
             .band_height = band_h,
             .actors = std.ArrayList(Sprite).init(alligator),
-            // .immobiles = immobiles,
             .is_dirty = false,
             .alligator = alligator,
             .field = field,
@@ -107,7 +100,6 @@ pub const PlayField = struct {
     pub fn close(self: *PlayField) void {
         self.*.actors.deinit();
         clearSprites();
-        // self.*.immobiles.deinit();
     }
 
     pub fn addActor(self: *PlayField, sprite: *Sprite) !void {
