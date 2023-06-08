@@ -28,7 +28,7 @@ pub const TimedPlayMode = struct {
         var sprite = Sprite.init(BlockTextureTags.A, 24, 24);
         sprite.setPosition(-1, -1);
 
-        var play_field = PlayField.init(heap_alloc, 15, 15).?;
+        var play_field = PlayField.init(heap_alloc, 10, 10).?;
         play_field.addActor(&sprite) catch {
             std.log.err("Cannot add sprite to play field", .{});
         };
@@ -48,7 +48,7 @@ pub const TimedPlayMode = struct {
             return;
         };
         self.paintActors(renderer);
-        self.paintBand(renderer);
+        // self.paintBand(renderer);
     }
 
     pub fn paintActors(self: TimedPlayMode, renderer: *sdl.Renderer) void {
@@ -108,6 +108,11 @@ pub const TimedPlayMode = struct {
                     }
                 }
             },
+            .mouse_button_down => |mouse_event| {
+                if (mouse_event.button == sdl.MouseButton.middle) {
+                    self.play_field.moveActor();
+                }
+            },
             else => {},
         }
         return true;
@@ -116,11 +121,17 @@ pub const TimedPlayMode = struct {
     pub fn on_key(self: *TimedPlayMode, key_event: sdl.KeyboardEvent) bool {
         for (self.play_field.actors.items) |*actor| {
             if (key_event.keycode == sdl.Keycode.left) {
-                actor.*.moveClockwise();
+                self.moveCounterClockwise(actor);
+                // actor.*.moveClockwise();
             }
             if (key_event.keycode == sdl.Keycode.right) {
-                actor.*.moveCounterClockwise();
+                self.moveClockwise(actor);
+                // actor.*.moveCounterClockwise();
             }
+            if (key_event.keycode == sdl.Keycode.space) {
+                self.play_field.moveActor();
+            }
+
             if (key_event.keycode == sdl.Keycode.d) {
                 self.play_field.removeRow();
                 self.recenterPlayField();

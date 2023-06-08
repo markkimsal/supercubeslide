@@ -52,8 +52,7 @@ pub fn main() !void {
                     const consumed = game_mode.on_key(event);
                     break :sw_blk consumed;
                 },
-                .mouse_wheel => |event| sw_blk: {
-                    _ = event;
+                .mouse_button_down, .mouse_wheel => sw_blk: {
                     const consumed = game_mode.on_input(ev);
                     break :sw_blk consumed;
                 },

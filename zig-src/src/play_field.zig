@@ -114,4 +114,90 @@ pub const PlayField = struct {
         try self.actors.append(sprite.*);
         self.snapToBand(sprite);
     }
+
+    pub fn moveActor(self: *PlayField) void {
+        var actor = &self.actors.items[0];
+        var rect = actor.rect;
+
+        // corner positions cause no movement
+        if (rect.x == -1 and rect.y == -1) return;
+        if (rect.x == self.band_width and rect.y == self.band_height) return;
+        if (rect.x == self.band_width and rect.y == -1) return;
+        if (rect.x == -1 and rect.y == self.band_height) return;
+
+        if (rect.x == -1) {
+            var new_actor = self.moveRowRight(@intCast(usize, rect.y), actor);
+            _ = new_actor;
+        }
+        if (rect.x == self.band_width) {
+            var new_actor = self.moveRowLeft(@intCast(usize, rect.y), actor);
+            _ = new_actor;
+        }
+        if (rect.y == -1) {
+            var new_actor = self.moveColDown(@intCast(usize, rect.x), actor);
+            _ = new_actor;
+        }
+        if (rect.y == self.band_height) {
+            var new_actor = self.moveColUp(@intCast(usize, rect.x), actor);
+            _ = new_actor;
+        }
+
+        std.log.info("moving actor {?}", .{actor});
+    }
+
+    fn moveRowRight(self: *PlayField, band_row: usize, actor: *Sprite) ?*Sprite {
+        const bw: usize = @intCast(usize, self.band_width);
+        var x: usize = bw - 1;
+        var actor_texture_tag = actor.texture_tag;
+
+        actor.texture_tag = self.field[band_row][x].texture_tag;
+        while (x > 0) : (x -= 1) {
+            self.field[band_row][x].texture_tag = self.field[band_row][x - 1].texture_tag;
+        }
+        self.field[band_row][0].texture_tag = actor_texture_tag;
+        actor.setPosition(@intCast(i32, self.band_width), @intCast(i32, band_row));
+        return null;
+    }
+
+    fn moveRowLeft(self: *PlayField, band_row: usize, actor: *Sprite) ?*Sprite {
+        const bw: usize = @intCast(usize, self.band_width);
+        var x: usize = 0;
+        var actor_texture_tag = actor.texture_tag;
+
+        actor.texture_tag = self.field[band_row][x].texture_tag;
+        while (x < bw - 1) : (x += 1) {
+            self.field[band_row][x].texture_tag = self.field[band_row][x + 1].texture_tag;
+        }
+        self.field[band_row][bw - 1].texture_tag = actor_texture_tag;
+        actor.setPosition(@intCast(i32, -1), @intCast(i32, band_row));
+        return null;
+    }
+
+    fn moveColDown(self: *PlayField, band_col: usize, actor: *Sprite) ?*Sprite {
+        const bh: usize = @intCast(usize, self.band_height);
+        var y: usize = bh - 1;
+        var actor_texture_tag = actor.texture_tag;
+
+        actor.texture_tag = self.field[y][band_col].texture_tag;
+        while (y > 0) : (y -= 1) {
+            self.field[y][band_col].texture_tag = self.field[y - 1][band_col].texture_tag;
+        }
+        self.field[0][band_col].texture_tag = actor_texture_tag;
+        actor.setPosition(@intCast(i32, band_col), @intCast(i32, self.band_height));
+        return null;
+    }
+
+    fn moveColUp(self: *PlayField, band_col: usize, actor: *Sprite) ?*Sprite {
+        const bw: usize = @intCast(usize, self.band_height);
+        var y: usize = 0;
+        var actor_texture_tag = actor.texture_tag;
+
+        actor.texture_tag = self.field[y][band_col].texture_tag;
+        while (y < bw - 1) : (y += 1) {
+            self.field[y][band_col].texture_tag = self.field[y + 1][band_col].texture_tag;
+        }
+        self.field[bw - 1][band_col].texture_tag = actor_texture_tag;
+        actor.setPosition(@intCast(i32, band_col), @intCast(i32, -1));
+        return null;
+    }
 };
