@@ -12,6 +12,7 @@ const play_field_height = 18;
 // const FieldContainer = std.AutoHashMap(u32, std.ArrayList(Sprite));
 const FieldContainer = [play_field_height][play_field_width]*Sprite;
 var field: FieldContainer = undefined;
+var rand = std.rand.Xoroshiro128.init(1234);
 
 pub const PlayField = struct {
     max_width: u8 = 18,
@@ -44,11 +45,12 @@ pub const PlayField = struct {
             for (0..self.band_width) |x| {
                 var xx = @intCast(i32, x);
                 {
-                    if (x % 4 == 0) {
+                    const tag_random = rand.next();
+                    if (tag_random % 4 == 0) {
                         self.field[y][x] = genSprite(BlockTextureTags.A, 24, 24).?;
-                    } else if (x % 3 == 0) {
+                    } else if (tag_random % 3 == 0) {
                         self.field[y][x] = genSprite(BlockTextureTags.C, 24, 24).?;
-                    } else if (x % 2 == 0) {
+                    } else if (tag_random % 2 == 0) {
                         self.field[y][x] = genSprite(BlockTextureTags.D, 24, 24).?;
                     } else {
                         self.field[y][x] = genSprite(BlockTextureTags.B, 24, 24).?;
@@ -59,8 +61,8 @@ pub const PlayField = struct {
         }
     }
 
-    pub fn removeRow(self: *PlayField) void {
-        var row_index: usize = 2;
+    pub fn removeRow(self: *PlayField, row_idx: usize) void {
+        var row_index = row_idx;
         if (self.band_height <= row_index) {
             row_index = self.band_height - 1;
         }
@@ -75,15 +77,37 @@ pub const PlayField = struct {
         for (0..self.band_width) |x| {
             self.field[self.band_height][x] = undefined;
         }
-        self.snapActorToBand(self.band_height - 1);
+        self.snapActorToBand(self.band_height - 1, -2);
         self.band_height -= 1;
     }
 
-    fn snapActorToBand(self: PlayField, new_height: c_int) void {
+    pub fn removeCol(self: *PlayField, col_idx: usize) void {
+        var col_index = col_idx;
+        if (self.band_width <= col_index) {
+            col_index = self.band_width - 1;
+        }
+        // move pointers left
+        for (col_index..self.band_width - 1) |x| {
+            for (0..self.band_height) |y| {
+                self.field[y][x] = self.field[y][x + 1];
+                self.field[y][x].setPosition(@intCast(i32, x), @intCast(i32, (y)));
+            }
+        }
+        for (0..self.band_height) |y| {
+            self.field[y][self.band_width] = undefined;
+        }
+        self.snapActorToBand(-2, self.band_width - 1);
+        self.band_width -= 1;
+    }
+
+    fn snapActorToBand(self: PlayField, new_height: c_int, new_width: c_int) void {
         for (self.actors.items) |*actor| {
             // if the actor is at the current, about to be shrunk y
-            if (actor.rect.y == self.band_height) {
+            if (actor.rect.y == self.band_height and new_height != -2) {
                 actor.rect.y = new_height;
+            }
+            if (actor.rect.x == self.band_width and new_width != -2) {
+                actor.rect.x = new_width;
             }
         }
     }

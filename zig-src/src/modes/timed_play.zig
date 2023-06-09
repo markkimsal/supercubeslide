@@ -28,7 +28,7 @@ pub const TimedPlayMode = struct {
         var sprite = Sprite.init(BlockTextureTags.A, 24, 24);
         sprite.setPosition(-1, -1);
 
-        var play_field = PlayField.init(heap_alloc, 10, 10).?;
+        var play_field = PlayField.init(heap_alloc, 5, 5).?;
         play_field.addActor(&sprite) catch {
             std.log.err("Cannot add sprite to play field", .{});
         };
@@ -48,7 +48,7 @@ pub const TimedPlayMode = struct {
             return;
         };
         self.paintActors(renderer);
-        // self.paintBand(renderer);
+        self.paintBand(renderer);
     }
 
     pub fn paintActors(self: TimedPlayMode, renderer: *sdl.Renderer) void {
@@ -137,7 +137,8 @@ pub const TimedPlayMode = struct {
             }
 
             if (key_event.keycode == sdl.Keycode.d) {
-                self.play_field.removeRow();
+                // self.play_field.removeRow(2);
+                self.play_field.removeCol(2);
                 self.recenterPlayField();
                 keymatch = true;
             }
@@ -155,7 +156,37 @@ pub const TimedPlayMode = struct {
         if (self.next_mode) |mode| {
             return mode;
         }
+        self.resolveField();
         return null;
+    }
+
+    fn resolveField(self: *TimedPlayMode) void {
+        for (0..self.play_field.band_height - 1) |y| {
+            var needs_removal = true;
+            for (0..self.play_field.band_width - 1) |x| {
+                needs_removal = needs_removal and self.play_field.field[y][x].texture_tag == self.play_field.field[y][x + 1].texture_tag;
+                if (!needs_removal) {
+                    break;
+                }
+            }
+            if (needs_removal) {
+                self.play_field.removeRow(y);
+                break;
+            }
+        }
+        for (0..self.play_field.band_width) |x| {
+            var needs_removal = true;
+            for (0..self.play_field.band_height - 1) |y| {
+                needs_removal = needs_removal and self.play_field.field[y][x].texture_tag == self.play_field.field[y + 1][x].texture_tag;
+                if (!needs_removal) {
+                    break;
+                }
+            }
+            if (needs_removal) {
+                self.play_field.removeCol(x);
+                break;
+            }
+        }
     }
 
     fn moveClockwise(self: TimedPlayMode, actor: *Sprite) void {
