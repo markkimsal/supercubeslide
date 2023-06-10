@@ -21,6 +21,7 @@ pub const TimedPlayMode = struct {
     col_removal_idx: ?usize,
     row_removal_idx: ?usize,
     animation: ?Animation,
+    move_count: u16 = 0,
 
     pub fn init(renderer: *sdl.Renderer) !TimedPlayMode {
         const img = @embedFile("background.png");
@@ -133,6 +134,7 @@ pub const TimedPlayMode = struct {
             .mouse_button_down => |mouse_event| {
                 if (mouse_event.button == sdl.MouseButton.middle or mouse_event.button == sdl.MouseButton.left) {
                     self.play_field.moveActor();
+                    self.recordMove();
                 }
             },
             else => {},
@@ -197,23 +199,27 @@ pub const TimedPlayMode = struct {
     }
 
     fn resolveAnimation(self: *TimedPlayMode) void {
+        if (self.animation == null) {
+            return;
+        }
+        const animation = &self.animation.?;
         var delta: u32 = @intCast(u32, (sdl.c.SDL_GetTicks64() - self.animation.?.t0));
-        switch (self.animation.?.anim_type) {
+        switch (animation.anim_type) {
             AnimationType.RemoveCol => {
-                var desaturate_percent: f64 = @intToFloat(f64, delta) / @intToFloat(f64, self.animation.?.duration);
+                var desaturate_percent: f64 = @intToFloat(f64, delta) / @intToFloat(f64, animation.duration);
                 for (0..self.play_field.band_height) |y| {
                     self.play_field.field[y][self.col_removal_idx.?].desaturate = desaturate_percent;
                 }
             },
             AnimationType.RemoveRow => {
-                var desaturate_percent: f64 = @intToFloat(f64, delta) / @intToFloat(f64, self.animation.?.duration);
+                var desaturate_percent: f64 = @intToFloat(f64, delta) / @intToFloat(f64, animation.duration);
                 for (0..self.play_field.band_width) |x| {
                     self.play_field.field[self.row_removal_idx.?][x].desaturate = desaturate_percent;
                 }
             },
         }
-        if (delta >= self.animation.?.duration) {
-            switch (self.animation.?.anim_type) {
+        if (delta >= animation.duration) {
+            switch (animation.anim_type) {
                 AnimationType.RemoveCol => {
                     for (0..self.play_field.band_height) |y| {
                         self.play_field.field[y][self.col_removal_idx.?].desaturate = 0.0;
@@ -316,5 +322,10 @@ pub const TimedPlayMode = struct {
             actor.*.rect = rect;
             return;
         }
+    }
+
+    fn recordMove(self: *TimedPlayMode) void {
+        self.move_count += 1;
+        std.log.info("Moves: {}", .{self.move_count});
     }
 };
