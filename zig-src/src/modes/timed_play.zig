@@ -240,23 +240,25 @@ pub const TimedPlayMode = struct {
     }
 
     fn resolveField(self: *TimedPlayMode) void {
-        for (0..self.play_field.band_height) |y| {
-            var needs_removal = true;
-            for (0..self.play_field.band_width - 1) |x| {
-                needs_removal = needs_removal and self.play_field.field[y][x].texture_tag == self.play_field.field[y][x + 1].texture_tag;
-                if (!needs_removal) {
-                    break;
+        if (self.play_field.band_width > 1) {
+            for (0..self.play_field.band_height) |y| {
+                var needs_removal = self.play_field.band_width > 1;
+                for (0..self.play_field.band_width - 1) |x| {
+                    needs_removal = needs_removal and self.play_field.field[y][x].texture_tag == self.play_field.field[y][x + 1].texture_tag;
+                    if (!needs_removal) {
+                        break;
+                    }
                 }
-            }
-            if (needs_removal) {
-                self.row_removal_idx = y;
-                // self.play_field.removeRow(y);
-                return;
+                if (needs_removal) {
+                    self.row_removal_idx = y;
+                    // self.play_field.removeRow(y);
+                    return;
+                }
             }
         }
         if (self.play_field.band_height > 1) {
             for (0..self.play_field.band_width) |x| {
-                var needs_removal = true;
+                var needs_removal = self.play_field.band_height > 1;
                 for (0..self.play_field.band_height - 1) |y| {
                     needs_removal = needs_removal and self.play_field.field[y][x].texture_tag == self.play_field.field[y + 1][x].texture_tag;
                     if (!needs_removal) {
