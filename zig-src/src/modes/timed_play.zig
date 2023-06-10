@@ -6,6 +6,9 @@ const Sprite = @import("../sprite.zig").Sprite;
 const BlockTextureTags = @import("../sprite.zig").BlockTextureTags;
 const PlayField = @import("../play_field.zig").PlayField;
 const FieldContainer = @import("../play_field.zig").FieldContainer;
+const Animation = @import("../animation.zig").Animation;
+const TaggedAnimation = @import("../animation.zig").TaggedAnimation;
+const AnimationType = @import("../animation.zig").AnimationType;
 
 const heap_alloc = std.heap.c_allocator;
 pub const TimedPlayMode = struct {
@@ -15,6 +18,9 @@ pub const TimedPlayMode = struct {
     play_field_offset_x: c_int = 150,
     play_field_offset_y: c_int = 120,
     next_mode: ?GameModes.GameModeType,
+    col_removal_idx: ?usize,
+    row_removal_idx: ?usize,
+    animation: ?Animation,
 
     pub fn init(renderer: *sdl.Renderer) !TimedPlayMode {
         const img = @embedFile("background.png");
@@ -38,6 +44,9 @@ pub const TimedPlayMode = struct {
             .cube_a = cube_texture,
             .next_mode = null,
             .play_field = play_field,
+            .animation = null,
+            .col_removal_idx = null,
+            .row_removal_idx = null,
         };
         play_mode.recenterPlayField();
         return play_mode;
@@ -106,6 +115,9 @@ pub const TimedPlayMode = struct {
     }
 
     pub fn on_input(self: *TimedPlayMode, event: sdl.Event) bool {
+        if (self.animation != null) {
+            return false;
+        }
         switch (event) {
             .mouse_wheel => |mouse_event| {
                 for (self.play_field.actors.items) |*actor| {
@@ -166,8 +178,59 @@ pub const TimedPlayMode = struct {
         if (self.next_mode) |mode| {
             return mode;
         }
+        if (self.animation != null) {
+            self.resolveAnimation();
+            return null;
+        }
+        if (self.col_removal_idx) |col_idx| {
+            _ = col_idx;
+            self.animation = Animation{ .t0 = sdl.c.SDL_GetTicks64(), .duration = 350, .anim_type = AnimationType.RemoveCol };
+            return null;
+        }
+        if (self.row_removal_idx) |row_idx| {
+            _ = row_idx;
+            self.animation = Animation{ .t0 = sdl.c.SDL_GetTicks64(), .duration = 350, .anim_type = AnimationType.RemoveRow };
+            return null;
+        }
         self.resolveField();
         return null;
+    }
+
+    fn resolveAnimation(self: *TimedPlayMode) void {
+        var delta: u32 = @intCast(u32, (sdl.c.SDL_GetTicks64() - self.animation.?.t0));
+        switch (self.animation.?.anim_type) {
+            AnimationType.RemoveCol => {
+                var desaturate_percent: f64 = @intToFloat(f64, delta) / @intToFloat(f64, self.animation.?.duration);
+                for (0..self.play_field.band_height) |y| {
+                    self.play_field.field[y][self.col_removal_idx.?].desaturate = desaturate_percent;
+                }
+            },
+            AnimationType.RemoveRow => {
+                var desaturate_percent: f64 = @intToFloat(f64, delta) / @intToFloat(f64, self.animation.?.duration);
+                for (0..self.play_field.band_width) |x| {
+                    self.play_field.field[self.row_removal_idx.?][x].desaturate = desaturate_percent;
+                }
+            },
+        }
+        if (delta >= self.animation.?.duration) {
+            switch (self.animation.?.anim_type) {
+                AnimationType.RemoveCol => {
+                    for (0..self.play_field.band_height) |y| {
+                        self.play_field.field[y][self.col_removal_idx.?].desaturate = 0.0;
+                    }
+                    self.play_field.removeCol(self.col_removal_idx.?);
+                    self.col_removal_idx = null;
+                },
+                AnimationType.RemoveRow => {
+                    for (0..self.play_field.band_width) |x| {
+                        self.play_field.field[self.row_removal_idx.?][x].desaturate = 0.0;
+                    }
+                    self.play_field.removeRow(self.row_removal_idx.?);
+                    self.row_removal_idx = null;
+                },
+            }
+            self.animation = null;
+        }
     }
 
     fn resolveField(self: *TimedPlayMode) void {
@@ -180,21 +243,25 @@ pub const TimedPlayMode = struct {
                 }
             }
             if (needs_removal) {
-                self.play_field.removeRow(y);
-                break;
+                self.row_removal_idx = y;
+                // self.play_field.removeRow(y);
+                return;
             }
         }
-        for (0..self.play_field.band_width) |x| {
-            var needs_removal = true;
-            for (0..self.play_field.band_height - 1) |y| {
-                needs_removal = needs_removal and self.play_field.field[y][x].texture_tag == self.play_field.field[y + 1][x].texture_tag;
-                if (!needs_removal) {
-                    break;
+        if (self.play_field.band_height > 1) {
+            for (0..self.play_field.band_width) |x| {
+                var needs_removal = true;
+                for (0..self.play_field.band_height - 1) |y| {
+                    needs_removal = needs_removal and self.play_field.field[y][x].texture_tag == self.play_field.field[y + 1][x].texture_tag;
+                    if (!needs_removal) {
+                        break;
+                    }
                 }
-            }
-            if (needs_removal) {
-                self.play_field.removeCol(x);
-                break;
+                if (needs_removal) {
+                    self.col_removal_idx = x;
+                    // self.play_field.removeCol(x);
+                    return;
+                }
             }
         }
     }

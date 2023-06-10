@@ -53,11 +53,13 @@ pub const Sprite = struct {
 
     texture_tag: BlockTextureTags,
     rect: sdl.Rectangle,
+    desaturate: f64,
 
     pub fn init(tex_tag: BlockTextureTags, x_size: i32, y_size: i32) Self {
         return Self{
             .texture_tag = tex_tag,
             .rect = sdl.Rectangle{ .x = 0, .y = 0, .width = @intCast(c_int, x_size), .height = @intCast(c_int, y_size) },
+            .desaturate = 0,
         };
     }
 
