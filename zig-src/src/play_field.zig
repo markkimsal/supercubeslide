@@ -75,7 +75,7 @@ pub const PlayField = struct {
             }
         }
         for (0..self.band_width) |x| {
-            self.field[self.band_height][x] = undefined;
+            self.field[self.band_height - 1][x] = undefined;
         }
         self.snapActorToBand(self.band_height - 1, -2);
         self.band_height -= 1;
@@ -94,7 +94,7 @@ pub const PlayField = struct {
             }
         }
         for (0..self.band_height) |y| {
-            self.field[y][self.band_width] = undefined;
+            self.field[y][self.band_width - 1] = undefined;
         }
         self.snapActorToBand(-2, self.band_width - 1);
         self.band_width -= 1;

@@ -62,9 +62,19 @@ pub const TimedPlayMode = struct {
 
                 rect.x += self.play_field_offset_x; // playfield centering on background
                 rect.y += self.play_field_offset_y; // playfield centering on background
-                renderer.copy(actor.getTexture(), rect, null) catch {
-                    std.log.err("error copying field cube to renderer", .{});
-                };
+                if (actor.desaturate != 0.0) {
+                    var alpha_blend = actor.desaturate * 255;
+                    var alpha_blend_2 = @intCast(u8, 255 - @floatToInt(u8, alpha_blend));
+                    _ = sdl.c.SDL_SetTextureAlphaMod(actor.getTexture().ptr, alpha_blend_2);
+                    renderer.copy(actor.getTexture(), rect, null) catch {
+                        std.log.err("error copying field cube to renderer", .{});
+                    };
+                    _ = sdl.c.SDL_SetTextureAlphaMod(actor.getTexture().ptr, 255);
+                } else {
+                    renderer.copy(actor.getTexture(), rect, null) catch {
+                        std.log.err("error copying field cube to renderer", .{});
+                    };
+                }
             }
         }
 
@@ -161,7 +171,7 @@ pub const TimedPlayMode = struct {
     }
 
     fn resolveField(self: *TimedPlayMode) void {
-        for (0..self.play_field.band_height - 1) |y| {
+        for (0..self.play_field.band_height) |y| {
             var needs_removal = true;
             for (0..self.play_field.band_width - 1) |x| {
                 needs_removal = needs_removal and self.play_field.field[y][x].texture_tag == self.play_field.field[y][x + 1].texture_tag;
