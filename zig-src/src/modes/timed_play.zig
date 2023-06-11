@@ -22,6 +22,7 @@ pub const TimedPlayMode = struct {
     row_removal_idx: ?usize,
     animation: ?Animation,
     move_count: u16 = 0,
+    level_number: u16 = 0,
 
     pub fn init(renderer: *sdl.Renderer) !TimedPlayMode {
         const img = @embedFile("background.png");
@@ -39,7 +40,7 @@ pub const TimedPlayMode = struct {
         play_field.addActor(&sprite) catch {
             std.log.err("Cannot add sprite to play field", .{});
         };
-        play_field.populateField(renderer);
+        play_field.populateField(0, 4, 4);
         var play_mode = TimedPlayMode{
             .background_image = texture,
             .cube_a = cube_texture,
@@ -186,15 +187,28 @@ pub const TimedPlayMode = struct {
         }
         if (self.col_removal_idx) |col_idx| {
             _ = col_idx;
-            self.animation = Animation{ .t0 = sdl.c.SDL_GetTicks64(), .duration = 350, .anim_type = AnimationType.RemoveCol };
+            self.animation = Animation{ .t0 = sdl.c.SDL_GetTicks64(), .duration = 450, .anim_type = AnimationType.RemoveCol };
             return null;
         }
         if (self.row_removal_idx) |row_idx| {
             _ = row_idx;
-            self.animation = Animation{ .t0 = sdl.c.SDL_GetTicks64(), .duration = 350, .anim_type = AnimationType.RemoveRow };
+            self.animation = Animation{ .t0 = sdl.c.SDL_GetTicks64(), .duration = 450, .anim_type = AnimationType.RemoveRow };
             return null;
         }
-        self.resolveField();
+        if (!self.resolveField()) {
+            if (self.play_field.band_height <= 1 or self.play_field.band_width <= 1) {
+                std.log.info("Congrats", .{});
+                self.level_number = self.level_number + 1;
+                var band_w: u8 = 4 + @intCast(u8, (@divTrunc(self.level_number, 10)));
+                self.play_field.populateField(self.level_number, band_w, band_w);
+
+                for (self.play_field.actors.items) |*actor| {
+                    actor.setPosition(-1, -1);
+                }
+
+                return null;
+            }
+        }
         return null;
     }
 
@@ -239,7 +253,7 @@ pub const TimedPlayMode = struct {
         }
     }
 
-    fn resolveField(self: *TimedPlayMode) void {
+    fn resolveField(self: *TimedPlayMode) bool {
         if (self.play_field.band_width > 1) {
             for (0..self.play_field.band_height) |y| {
                 var needs_removal = self.play_field.band_width > 1;
@@ -252,7 +266,7 @@ pub const TimedPlayMode = struct {
                 if (needs_removal) {
                     self.row_removal_idx = y;
                     // self.play_field.removeRow(y);
-                    return;
+                    return true;
                 }
             }
         }
@@ -268,10 +282,11 @@ pub const TimedPlayMode = struct {
                 if (needs_removal) {
                     self.col_removal_idx = x;
                     // self.play_field.removeCol(x);
-                    return;
+                    return true;
                 }
             }
         }
+        return false;
     }
 
     fn moveClockwise(self: TimedPlayMode, actor: *Sprite) void {

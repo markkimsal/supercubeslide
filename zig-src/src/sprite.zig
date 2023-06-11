@@ -31,13 +31,10 @@ pub fn closeTextures() void {
 }
 
 var sprite_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-// const sprite_allocator = @ptrCast(*heap.arena_allocator.ArenaAllocator, sprite_arena.allocator());
-// var sprite_allocator = @ptrCast(*std.heap.arena_allocator.ArenaAllocator, &sprite_arena.allocator());
-const sprite_allocator = sprite_arena.allocator();
+var sprite_allocator = sprite_arena.allocator();
 
 pub fn clearSprites() void {
-    std.log.info("clearing sprite arena", .{});
-    sprite_arena.deinit();
+    _ = sprite_arena.reset(std.heap.ArenaAllocator.ResetMode.free_all);
 }
 
 pub fn genSprite(tex_tag: BlockTextureTags, x_size: i32, y_size: i32) ?*Sprite {

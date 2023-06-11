@@ -37,14 +37,20 @@ pub const PlayField = struct {
         };
     }
 
-    pub fn populateField(self: *PlayField, renderer: *sdl.Renderer) void {
-        _ = renderer;
-
+    pub fn populateField(self: *PlayField, level_number: u16, band_w: u8, band_h: u8) void {
+        // self.alligator.destroy(self.actors);
+        // self.actors = std.ArrayList(Sprite).init(self.alligator);
+        clearSprites();
+        self.band_height = band_h;
+        self.band_width = band_w;
         for (0..self.band_height) |y| {
             var yy = @intCast(i32, y);
             for (0..self.band_width) |x| {
                 var xx = @intCast(i32, x);
                 {
+                    for (0..level_number) |_| {
+                        _ = rand.next();
+                    }
                     const tag_random = rand.next();
                     if (tag_random % 4 == 0) {
                         self.field[y][x] = genSprite(BlockTextureTags.A, 24, 24).?;
