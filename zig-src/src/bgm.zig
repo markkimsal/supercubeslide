@@ -41,7 +41,7 @@ pub fn start_song(song_index: usize) void {
     const filename = song_list[song_index].filename;
     var buffer = [_]u8{undefined} ** 100;
     const printed = std.fmt.bufPrint(&buffer, "../media/music/{s}", .{filename}) catch "out-of-memory";
-    curr_song = mixer.Mix_LoadMUS(@ptrCast([*c]const u8, printed));
+    curr_song = mixer.Mix_LoadMUS(@as([*c]const u8, @ptrCast(printed)));
     if (curr_song) |s| {
         _ = s;
         var yes = mixer.Mix_PlayMusic(curr_song.?, 0);

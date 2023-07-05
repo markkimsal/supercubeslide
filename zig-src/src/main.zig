@@ -69,7 +69,7 @@ pub fn main() !void {
         }
         var next_mode = game_mode.update();
         if (next_mode) |mode_type| {
-            std.log.info("switching to new game mode: {?}", .{@enumToInt(mode_type)});
+            std.log.info("switching to new game mode: {?}", .{@intFromEnum(mode_type)});
             var new_mode = switch (mode_type) {
                 GameModeType.Attract => GameModes.GameMode{ .attract = try AttractMode.AttractMode.init(&renderer) },
                 GameModeType.TimedPlay => GameModes.GameMode{ .timed_play = try TimedPlayMode.init(&renderer) },

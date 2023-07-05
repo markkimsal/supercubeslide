@@ -75,7 +75,7 @@ pub const TimedPlayMode = struct {
                 rect.y += self.play_field_offset_y; // playfield centering on background
                 if (actor.desaturate != 0.0) {
                     var alpha_blend = actor.desaturate * 255;
-                    var alpha_blend_2 = @intCast(u8, 255 - @floatToInt(u8, alpha_blend));
+                    var alpha_blend_2 = @as(u8, 255 - @as(u8, @intFromFloat(alpha_blend)));
                     _ = sdl.c.SDL_SetTextureAlphaMod(actor.getTexture().ptr, alpha_blend_2);
                     renderer.copy(actor.getTexture(), rect, null) catch {
                         std.log.err("error copying field cube to renderer", .{});
@@ -107,7 +107,7 @@ pub const TimedPlayMode = struct {
     }
 
     pub fn paintBand(self: TimedPlayMode, renderer: *sdl.Renderer) void {
-        renderer.drawRect(sdl.Rectangle{ .width = @intCast(c_int, self.play_field.band_width) * 24, .height = @intCast(c_int, self.play_field.band_height) * 24, .x = self.play_field_offset_x, .y = self.play_field_offset_y }) catch {};
+        renderer.drawRect(sdl.Rectangle{ .width = @as(c_int, @intCast(self.play_field.band_width)) * 24, .height = @as(c_int, @intCast(self.play_field.band_height)) * 24, .x = self.play_field_offset_x, .y = self.play_field_offset_y }) catch {};
     }
 
     pub fn exit(self: *TimedPlayMode) void {
@@ -173,8 +173,8 @@ pub const TimedPlayMode = struct {
 
     // graphical area is around 600 x 600
     fn recenterPlayField(self: *TimedPlayMode) void {
-        self.play_field_offset_x = (272 - @divFloor(@intCast(c_int, self.play_field.band_width) * 24, 2));
-        self.play_field_offset_y = (232 - @divFloor(@intCast(c_int, self.play_field.band_height) * 24, 2));
+        self.play_field_offset_x = (272 - @divFloor(@as(c_int, @intCast(self.play_field.band_width)) * 24, 2));
+        self.play_field_offset_y = (232 - @divFloor(@as(c_int, @intCast(self.play_field.band_height)) * 24, 2));
     }
 
     pub fn update(self: *TimedPlayMode) ?GameModes.GameModeType {
@@ -199,7 +199,7 @@ pub const TimedPlayMode = struct {
             if (self.play_field.band_height <= 1 or self.play_field.band_width <= 1) {
                 std.log.info("Congrats", .{});
                 self.level_number = self.level_number + 1;
-                var band_w: u8 = 4 + @intCast(u8, (@divTrunc(self.level_number, 10)));
+                var band_w: u8 = 4 + @as(u8, @intCast(@divTrunc(self.level_number, 10)));
                 self.play_field.populateField(self.level_number, band_w, band_w);
 
                 for (self.play_field.actors.items) |*actor| {
@@ -217,16 +217,16 @@ pub const TimedPlayMode = struct {
             return;
         }
         const animation = &self.animation.?;
-        var delta: u32 = @intCast(u32, (sdl.c.SDL_GetTicks64() - self.animation.?.t0));
+        var delta: u32 = @as(u32, @intCast(sdl.c.SDL_GetTicks64() - self.animation.?.t0));
         switch (animation.anim_type) {
             AnimationType.RemoveCol => {
-                var desaturate_percent: f64 = @intToFloat(f64, delta) / @intToFloat(f64, animation.duration);
+                var desaturate_percent: f64 = @as(f64, @floatFromInt(delta)) / @as(f64, @floatFromInt(animation.duration));
                 for (0..self.play_field.band_height) |y| {
                     self.play_field.field[y][self.col_removal_idx.?].desaturate = desaturate_percent;
                 }
             },
             AnimationType.RemoveRow => {
-                var desaturate_percent: f64 = @intToFloat(f64, delta) / @intToFloat(f64, animation.duration);
+                var desaturate_percent: f64 = @as(f64, @floatFromInt(delta)) / @as(f64, @floatFromInt(animation.duration));
                 for (0..self.play_field.band_width) |x| {
                     self.play_field.field[self.row_removal_idx.?][x].desaturate = desaturate_percent;
                 }

@@ -55,13 +55,13 @@ pub const Sprite = struct {
     pub fn init(tex_tag: BlockTextureTags, x_size: i32, y_size: i32) Self {
         return Self{
             .texture_tag = tex_tag,
-            .rect = sdl.Rectangle{ .x = 0, .y = 0, .width = @intCast(c_int, x_size), .height = @intCast(c_int, y_size) },
+            .rect = sdl.Rectangle{ .x = 0, .y = 0, .width = @as(c_int, x_size), .height = @as(c_int, y_size) },
             .desaturate = 0,
         };
     }
 
     pub fn getTexture(self: Self) sdl.Texture {
-        return block_textures[@enumToInt(self.texture_tag)];
+        return block_textures[@intFromEnum(self.texture_tag)];
     }
 
     pub fn setPosition(self: *Self, x: i32, y: i32) void {
