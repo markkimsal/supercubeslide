@@ -4,7 +4,7 @@ const Sdk = @import("mods/sdl-zig/Sdk.zig"); // Import the Sdk at build time
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
 // runner.
-pub fn build(b: *std.Build) void {
+pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
     // Standard target options allows the person running `zig build` to choose
     // what target to build for. Here we do not override the defaults, which
     // means any target is allowed, and the default is native. Other options
@@ -17,7 +17,7 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     // Create a new instance of the SDL2 Sdk
-    const sdk = Sdk.init(b, null);
+    // const sdk = Sdk.init(b, null);
 
     const exe = b.addExecutable(.{
         .name = "supercubeslide",
@@ -27,9 +27,10 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    sdk.link(exe, .dynamic);
-    exe.addModule("sdl2", sdk.getWrapperModule());
-    exe.addModule("sdl-native", sdk.getNativeModule());
+    exe.linkLibC();
+    // sdk.link(exe, .dynamic);
+    // exe.addModule("sdl2", sdk.getWrapperModule());
+    // exe.addModule("sdl-native", sdk.getNativeModule());
     exe.linkSystemLibrary("sdl2_image");
     exe.linkSystemLibrary("sdl2_mixer");
     exe.linkSystemLibrary("sdl2_ttf");

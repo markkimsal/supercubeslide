@@ -1,4 +1,7 @@
-const sdl = @import("sdl2");
+// const sdl = @import("sdl2");
+const MainModule = @import("../main.zig");
+const sdl = MainModule.sdl;
+
 const Attract = @import("attract.zig").AttractMode;
 const TimedPlay = @import("timed_play.zig").TimedPlayMode;
 
@@ -12,13 +15,13 @@ pub const GameMode = union(enum) {
     attract: Attract,
     timed_play: TimedPlay,
 
-    pub fn init(self: *Self, renderer: *sdl.Renderer) !GameMode {
+    pub fn init(self: *Self, renderer: *sdl.SDL_Renderer) !GameMode {
         switch (self.*) {
             inline else => |*case| return case.init(renderer),
         }
     }
 
-    pub fn paint(self: *Self, renderer: *sdl.Renderer) void {
+    pub fn paint(self: *Self, renderer: *sdl.SDL_Renderer) void {
         switch (self.*) {
             inline else => |*case| case.paint(renderer),
         }
@@ -30,12 +33,12 @@ pub const GameMode = union(enum) {
         }
     }
 
-    pub fn on_key(self: *Self, key_event: sdl.KeyboardEvent) bool {
+    pub fn on_key(self: *Self, key_event: *sdl.SDL_KeyboardEvent) bool {
         switch (self.*) {
             inline else => |*case| return case.on_key(key_event),
         }
     }
-    pub fn on_input(self: *Self, event: sdl.Event) bool {
+    pub fn on_input(self: *Self, event: *sdl.SDL_Event) bool {
         switch (self.*) {
             inline else => |*case| return case.on_input(event),
         }

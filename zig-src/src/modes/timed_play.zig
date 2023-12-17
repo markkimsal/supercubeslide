@@ -1,8 +1,10 @@
 const std = @import("std");
-const sdl = @import("sdl2");
+// const sdl = @import("sdl2");
 const MainModule = @import("../main.zig");
+const sdl = MainModule.sdl;
 const GameModes = @import("game_modes.zig");
-const Sprite = @import("../sprite.zig").Sprite;
+const SpriteModule = @import("../sprite.zig");
+const Sprite = SpriteModule.Sprite;
 const BlockTextureTags = @import("../sprite.zig").BlockTextureTags;
 const PlayField = @import("../play_field.zig").PlayField;
 const FieldContainer = @import("../play_field.zig").FieldContainer;
@@ -12,8 +14,8 @@ const AnimationType = @import("../animation.zig").AnimationType;
 
 const heap_alloc = std.heap.c_allocator;
 pub const TimedPlayMode = struct {
-    background_image: sdl.Texture,
-    cube_a: sdl.Texture,
+    background_image: *sdl.SDL_Texture,
+    cube_a: *sdl.SDL_Texture,
     play_field: PlayField,
     play_field_offset_x: c_int = 150,
     play_field_offset_y: c_int = 120,
@@ -24,13 +26,13 @@ pub const TimedPlayMode = struct {
     move_count: u16 = 0,
     level_number: u16 = 0,
 
-    pub fn init(renderer: *sdl.Renderer) !TimedPlayMode {
+    pub fn init(renderer: *sdl.SDL_Renderer) !TimedPlayMode {
         const img = @embedFile("background.png");
-        const texture = sdl.image.loadTextureMem(renderer.*, img[0..], sdl.image.ImgFormat.png) catch |err| {
+        const texture = SpriteModule.loadTextureMem(renderer, img[0..], SpriteModule.ImgFormat.png) catch |err| {
             return err;
         };
         var cube_a = @embedFile("cube_a.png");
-        var cube_texture = sdl.image.loadTextureMem(renderer.*, cube_a[0..], sdl.image.ImgFormat.png) catch |err| {
+        var cube_texture = SpriteModule.loadTextureMem(renderer, cube_a[0..], SpriteModule.ImgFormat.png) catch |err| {
             return err;
         };
         var sprite = Sprite.init(BlockTextureTags.A, 24, 24);
@@ -54,15 +56,18 @@ pub const TimedPlayMode = struct {
         return play_mode;
     }
 
-    pub fn paint(self: *TimedPlayMode, renderer: *sdl.Renderer) void {
-        renderer.copy(self.background_image, null, null) catch {
+    pub fn paint(self: *TimedPlayMode, renderer: *sdl.SDL_Renderer) void {
+        if (sdl.SDL_RenderCopy(renderer, self.background_image, null, null) > 0) {
             return;
-        };
+        }
+        // renderer.copy(self.background_image, null, null) catch {
+        //     return;
+        // };
         self.paintActors(renderer);
         self.paintBand(renderer);
     }
 
-    pub fn paintActors(self: TimedPlayMode, renderer: *sdl.Renderer) void {
+    pub fn paintActors(self: TimedPlayMode, renderer: *sdl.SDL_Renderer) void {
         for (0..self.play_field.band_height) |y| {
             for (0..self.play_field.band_width) |x| {
                 var actor = self.play_field.field[y][x].*;
@@ -76,15 +81,13 @@ pub const TimedPlayMode = struct {
                 if (actor.desaturate != 0.0) {
                     var alpha_blend = actor.desaturate * 255;
                     var alpha_blend_2 = @as(u8, 255 - @as(u8, @intFromFloat(alpha_blend)));
-                    _ = sdl.c.SDL_SetTextureAlphaMod(actor.getTexture().ptr, alpha_blend_2);
-                    renderer.copy(actor.getTexture(), rect, null) catch {
-                        std.log.err("error copying field cube to renderer", .{});
-                    };
-                    _ = sdl.c.SDL_SetTextureAlphaMod(actor.getTexture().ptr, 255);
+                    _ = sdl.SDL_SetTextureAlphaMod(actor.getTexture(), alpha_blend_2);
+                    _ = sdl.SDL_RenderCopy(renderer, actor.getTexture(), null, &rect);
+                    _ = sdl.SDL_SetTextureAlphaMod(actor.getTexture(), 255);
                 } else {
-                    renderer.copy(actor.getTexture(), rect, null) catch {
+                    if (sdl.SDL_RenderCopy(renderer, actor.getTexture(), null, &rect) < 0) {
                         std.log.err("error copying field cube to renderer", .{});
-                    };
+                    }
                 }
             }
         }
@@ -99,41 +102,41 @@ pub const TimedPlayMode = struct {
             rect.x += self.play_field_offset_x; // playfield centering on background
             rect.y += self.play_field_offset_y; // playfield centering on background
 
-            // renderer.copy(self.cube_a, rect, null) catch {
-            renderer.copy(actor.getTexture(), rect, null) catch {
+            if (sdl.SDL_RenderCopy(renderer, actor.getTexture(), null, &rect) > 0) {
                 std.log.err("error copying actor to renderer", .{});
-            };
+            }
         }
     }
 
-    pub fn paintBand(self: TimedPlayMode, renderer: *sdl.Renderer) void {
-        renderer.drawRect(sdl.Rectangle{ .width = @as(c_int, @intCast(self.play_field.band_width)) * 24, .height = @as(c_int, @intCast(self.play_field.band_height)) * 24, .x = self.play_field_offset_x, .y = self.play_field_offset_y }) catch {};
+    pub fn paintBand(self: TimedPlayMode, renderer: *sdl.SDL_Renderer) void {
+        // renderer.drawRect(sdl.SDL_Rect{ .width = @as(c_int, @intCast(self.play_field.band_width)) * 24, .height = @as(c_int, @intCast(self.play_field.band_height)) * 24, .x = self.play_field_offset_x, .y = self.play_field_offset_y }) catch {};
+        const rect = sdl.SDL_Rect{ .w = @as(c_int, @intCast(self.play_field.band_width)) * 24, .h = @as(c_int, @intCast(self.play_field.band_height)) * 24, .x = self.play_field_offset_x, .y = self.play_field_offset_y };
+        _ = sdl.SDL_RenderDrawRect(renderer, &rect);
     }
 
     pub fn exit(self: *TimedPlayMode) void {
         std.log.info("timed play mode: destroying background", .{});
-        self.background_image.destroy();
+        sdl.SDL_DestroyTexture(self.background_image);
+        // self.background_image.destroy();
         self.play_field.close();
     }
 
-    pub fn on_input(self: *TimedPlayMode, event: sdl.Event) bool {
+    pub fn on_input(self: *TimedPlayMode, event: *sdl.SDL_Event) bool {
         if (self.animation != null) {
             return false;
         }
-        switch (event) {
-            .mouse_wheel => |mouse_event| {
+        switch (event.type) {
+            sdl.SDL_MOUSEWHEEL => {
                 for (self.play_field.actors.items) |*actor| {
-                    if (mouse_event.delta_y > 0) {
+                    if (event.wheel.y > 0) {
                         self.moveCounterClockwise(actor);
-                        // actor.*.moveClockwise();
                     } else {
                         self.moveClockwise(actor);
-                        // actor.*.moveCounterClockwise();
                     }
                 }
             },
-            .mouse_button_down => |mouse_event| {
-                if (mouse_event.button == sdl.MouseButton.middle or mouse_event.button == sdl.MouseButton.left) {
+            sdl.SDL_MOUSEBUTTONDOWN => {
+                if (event.button.button == sdl.SDL_BUTTON_MIDDLE or event.button.button == sdl.SDL_BUTTON_LEFT) {
                     self.play_field.moveActor();
                     self.recordMove();
                 }
@@ -143,26 +146,23 @@ pub const TimedPlayMode = struct {
         return true;
     }
 
-    pub fn on_key(self: *TimedPlayMode, key_event: sdl.KeyboardEvent) bool {
+    pub fn on_key(self: *TimedPlayMode, key_event: *sdl.SDL_KeyboardEvent) bool {
         var keymatch = false;
         for (self.play_field.actors.items) |*actor| {
-            if (key_event.keycode == sdl.Keycode.left) {
+            if (key_event.keysym.sym == sdl.SDLK_LEFT) {
                 self.moveCounterClockwise(actor);
-                // actor.*.moveClockwise();
                 keymatch = true;
             }
-            if (key_event.keycode == sdl.Keycode.right) {
+            if (key_event.keysym.sym == sdl.SDLK_RIGHT) {
                 self.moveClockwise(actor);
-                // actor.*.moveCounterClockwise();
                 keymatch = true;
             }
-            if (key_event.keycode == sdl.Keycode.space) {
+            if (key_event.keysym.sym == sdl.SDLK_SPACE) {
                 self.play_field.moveActor();
                 keymatch = true;
             }
 
-            if (key_event.keycode == sdl.Keycode.d) {
-                // self.play_field.removeRow(2);
+            if (key_event.keysym.sym == sdl.SDLK_d) {
                 self.play_field.removeCol(2);
                 self.recenterPlayField();
                 keymatch = true;
@@ -187,12 +187,12 @@ pub const TimedPlayMode = struct {
         }
         if (self.col_removal_idx) |col_idx| {
             _ = col_idx;
-            self.animation = Animation{ .t0 = sdl.c.SDL_GetTicks64(), .duration = 450, .anim_type = AnimationType.RemoveCol };
+            self.animation = Animation{ .t0 = sdl.SDL_GetTicks64(), .duration = 450, .anim_type = AnimationType.RemoveCol };
             return null;
         }
         if (self.row_removal_idx) |row_idx| {
             _ = row_idx;
-            self.animation = Animation{ .t0 = sdl.c.SDL_GetTicks64(), .duration = 450, .anim_type = AnimationType.RemoveRow };
+            self.animation = Animation{ .t0 = sdl.SDL_GetTicks64(), .duration = 450, .anim_type = AnimationType.RemoveRow };
             return null;
         }
         if (!self.resolveField()) {
@@ -217,7 +217,7 @@ pub const TimedPlayMode = struct {
             return;
         }
         const animation = &self.animation.?;
-        var delta: u32 = @as(u32, @intCast(sdl.c.SDL_GetTicks64() - self.animation.?.t0));
+        var delta: u32 = @as(u32, @intCast(sdl.SDL_GetTicks64() - self.animation.?.t0));
         switch (animation.anim_type) {
             AnimationType.RemoveCol => {
                 var desaturate_percent: f64 = @as(f64, @floatFromInt(delta)) / @as(f64, @floatFromInt(animation.duration));
