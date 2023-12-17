@@ -27,36 +27,35 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
         .target = target,
         .optimize = optimize,
     });
+    installStaticResources(exe);
     exe.linkLibC();
     // sdk.link(exe, .dynamic);
     // exe.addModule("sdl2", sdk.getWrapperModule());
     // exe.addModule("sdl-native", sdk.getNativeModule());
-    exe.linkSystemLibrary("sdl2_image");
-    exe.linkSystemLibrary("sdl2_mixer");
-    exe.linkSystemLibrary("sdl2_ttf");
-    exe.linkSystemLibrary("jpeg");
-    exe.linkSystemLibrary("libpng");
-    exe.linkSystemLibrary("tiff");
-    exe.linkSystemLibrary("webp");
-    exe.addAnonymousModule("loadingscreen.png", .{
-        .source_file = std.build.FileSource.relative("../media/loadingscreen.png"),
-    });
-    exe.addAnonymousModule("background.png", .{
-        .source_file = std.build.FileSource.relative("../media/background.png"),
-    });
-    exe.addAnonymousModule("cube_a.png", .{
-        .source_file = std.build.FileSource.relative("../media/block_a.png"),
-    });
-    exe.addAnonymousModule("cube_b.png", .{
-        .source_file = std.build.FileSource.relative("../media/block_b.png"),
-    });
-    exe.addAnonymousModule("cube_c.png", .{
-        .source_file = std.build.FileSource.relative("../media/block_c.png"),
-    });
-    exe.addAnonymousModule("cube_d.png", .{
-        .source_file = std.build.FileSource.relative("../media/block_d.png"),
-    });
-
+    if (exe.target.isWindows()) {
+        exe.addIncludePath(.{ .path = "/usr/include/" });
+        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-gnu/libSDL2/" });
+        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-gnu/SDL2_image/" });
+        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-gnu/SDL2_image/optional/" });
+        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-gnu/SDL_ttf/" });
+        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-gnu/SDL_mixer/" });
+        exe.linkSystemLibrary("SDL2_image");
+        exe.linkSystemLibrary("SDL2_mixer");
+        exe.linkSystemLibrary("SDL2_ttf");
+        // exe.linkSystemLibrary("jpeg");
+        // exe.linkSystemLibrary("libpng");
+        exe.linkSystemLibrary("libtiff-5");
+        exe.linkSystemLibrary("libwebp-7");
+    }
+    if (exe.target.isLinux()) {
+        exe.linkSystemLibrary("SDL2_image");
+        exe.linkSystemLibrary("SDL2_mixer");
+        exe.linkSystemLibrary("SDL2_ttf");
+        exe.linkSystemLibrary("jpeg");
+        exe.linkSystemLibrary("libpng");
+        exe.linkSystemLibrary("tiff");
+        exe.linkSystemLibrary("webp");
+    }
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).
@@ -100,4 +99,25 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
     // running the unit tests.
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_unit_tests.step);
+}
+
+fn installStaticResources(exe: *std.Build.Step.Compile) void {
+    exe.addAnonymousModule("loadingscreen.png", .{
+        .source_file = std.build.FileSource.relative("../media/loadingscreen.png"),
+    });
+    exe.addAnonymousModule("background.png", .{
+        .source_file = std.build.FileSource.relative("../media/background.png"),
+    });
+    exe.addAnonymousModule("cube_a.png", .{
+        .source_file = std.build.FileSource.relative("../media/block_a.png"),
+    });
+    exe.addAnonymousModule("cube_b.png", .{
+        .source_file = std.build.FileSource.relative("../media/block_b.png"),
+    });
+    exe.addAnonymousModule("cube_c.png", .{
+        .source_file = std.build.FileSource.relative("../media/block_c.png"),
+    });
+    exe.addAnonymousModule("cube_d.png", .{
+        .source_file = std.build.FileSource.relative("../media/block_d.png"),
+    });
 }
