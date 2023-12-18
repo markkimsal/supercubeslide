@@ -25,6 +25,7 @@ pub const PlayField = struct {
     is_dirty: bool,
     alligator: std.mem.Allocator,
     field: FieldContainer,
+    move_count: u8 = 0,
 
     pub fn init(alligator: std.mem.Allocator, band_w: u8, band_h: u8) ?PlayField {
         return PlayField{
@@ -137,15 +138,15 @@ pub const PlayField = struct {
         self.snapToBand(sprite);
     }
 
-    pub fn moveActor(self: *PlayField) void {
+    pub fn moveActor(self: *PlayField) bool {
         var actor = &self.actors.items[0];
         var rect = actor.rect;
 
         // corner positions cause no movement
-        if (rect.x == -1 and rect.y == -1) return;
-        if (rect.x == self.band_width and rect.y == self.band_height) return;
-        if (rect.x == self.band_width and rect.y == -1) return;
-        if (rect.x == -1 and rect.y == self.band_height) return;
+        if (rect.x == -1 and rect.y == -1) return false;
+        if (rect.x == self.band_width and rect.y == self.band_height) return false;
+        if (rect.x == self.band_width and rect.y == -1) return false;
+        if (rect.x == -1 and rect.y == self.band_height) return false;
 
         if (rect.x == -1) {
             var new_actor = self.moveRowRight(@as(usize, @intCast(rect.y)), actor);
@@ -163,8 +164,9 @@ pub const PlayField = struct {
             var new_actor = self.moveColUp(@as(usize, @intCast(rect.x)), actor);
             _ = new_actor;
         }
-
-        std.log.info("moving actor {?}", .{actor});
+        self.move_count += 1;
+        return true;
+        // std.log.info("moving actor {?}", .{actor});
     }
 
     fn moveRowRight(self: *PlayField, band_row: usize, actor: *Sprite) ?*Sprite {

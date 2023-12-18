@@ -25,6 +25,7 @@ pub const TimedPlayMode = struct {
     animation: ?Animation,
     move_count: u16 = 0,
     level_number: u16 = 0,
+    score: i16 = 0,
 
     pub fn init(renderer: *sdl.SDL_Renderer) !TimedPlayMode {
         const img = @embedFile("background.png");
@@ -137,8 +138,9 @@ pub const TimedPlayMode = struct {
             },
             sdl.SDL_MOUSEBUTTONDOWN => {
                 if (event.button.button == sdl.SDL_BUTTON_MIDDLE or event.button.button == sdl.SDL_BUTTON_LEFT) {
-                    self.play_field.moveActor();
-                    self.recordMove();
+                    if (self.play_field.moveActor()) {
+                        self.recordMove();
+                    }
                 }
             },
             else => {},
@@ -158,7 +160,9 @@ pub const TimedPlayMode = struct {
                 keymatch = true;
             }
             if (key_event.keysym.sym == sdl.SDLK_SPACE) {
-                self.play_field.moveActor();
+                if (self.play_field.moveActor()) {
+                    self.recordMove();
+                }
                 keymatch = true;
             }
 
@@ -198,14 +202,7 @@ pub const TimedPlayMode = struct {
         if (!self.resolveField()) {
             if (self.play_field.band_height <= 1 or self.play_field.band_width <= 1) {
                 std.log.info("Congrats", .{});
-                self.level_number = self.level_number + 1;
-                var band_w: u8 = 4 + @as(u8, @intCast(@divTrunc(self.level_number, 10)));
-                self.play_field.populateField(self.level_number, band_w, band_w);
-
-                for (self.play_field.actors.items) |*actor| {
-                    actor.setPosition(-1, -1);
-                }
-
+                self.nextLevel();
                 return null;
             }
         }
@@ -344,5 +341,22 @@ pub const TimedPlayMode = struct {
     fn recordMove(self: *TimedPlayMode) void {
         self.move_count += 1;
         std.log.info("Moves: {}", .{self.move_count});
+    }
+
+    fn resetMoveCounter(self: *TimedPlayMode) void {
+        self.move_count = 0;
+    }
+
+    fn nextLevel(self: *TimedPlayMode) void {
+        self.level_number = self.level_number + 1;
+        var band_w: u8 = 4 + @as(u8, @intCast(@divTrunc(self.level_number, 10)));
+        self.play_field.populateField(self.level_number, band_w, band_w);
+
+        for (self.play_field.actors.items) |*actor| {
+            actor.setPosition(-1, -1);
+        }
+        self.score += @as(i16, @intCast(self.move_count));
+        std.log.info("Score: {}", .{self.score});
+        self.resetMoveCounter();
     }
 };

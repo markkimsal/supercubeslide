@@ -50,7 +50,6 @@ pub fn main() !void {
             const consumed: bool = switch (poll_event.type) {
                 sdl.SDL_QUIT => break :mainLoop,
                 sdl.SDL_KEYDOWN => sw_blk: {
-                    std.log.info("key is {}", .{poll_event.key.keysym.sym});
                     if (poll_event.key.keysym.sym == sdl.SDLK_ESCAPE) break :mainLoop;
                     if (poll_event.key.keysym.sym == sdl.SDLK_q) break :mainLoop;
                     const consumed = game_mode.on_key(&poll_event.key);
