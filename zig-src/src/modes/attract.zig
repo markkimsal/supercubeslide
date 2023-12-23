@@ -18,7 +18,13 @@ pub const AttractMode = struct {
         if (sdl.TTF_Init() > 0) {
             return error.SdlErrors;
         }
-        const font = sdl.TTF_OpenFont("../media/freesansbold.ttf", 20);
+        const font_mem = @embedFile("freesansbold.ttf");
+        const font_rw = sdl.SDL_RWFromConstMem(
+            @ptrCast(&font_mem[0]),
+            @intCast(font_mem.len),
+        ) orelse return error.SdlError;
+
+        const font = sdl.TTF_OpenFontRW(font_rw, 1, 20);
 
         return AttractMode{
             .background_image = texture,

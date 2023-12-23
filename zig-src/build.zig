@@ -120,4 +120,7 @@ fn installStaticResources(exe: *std.Build.Step.Compile) void {
     exe.addAnonymousModule("cube_d.png", .{
         .source_file = std.build.FileSource.relative("../media/block_d.png"),
     });
+    exe.addAnonymousModule("freesansbold.ttf", .{
+        .source_file = std.build.FileSource.relative("../media/freesansbold.ttf"),
+    });
 }
