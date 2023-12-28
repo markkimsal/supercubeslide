@@ -1,8 +1,9 @@
 const std = @import("std");
 pub const sdl = @cImport({
-    @cInclude("SDL2/SDL.h");
-    @cInclude("SDL2/SDL_image.h");
-    @cInclude("SDL2/SDL_ttf.h");
+    @cInclude("SDL.h");
+    @cInclude("SDL_image.h");
+    @cInclude("SDL_ttf.h");
+    @cInclude("SDL_mixer.h");
 });
 const PlayField = @import("play_field.zig");
 const AttractMode = @import("modes/attract.zig");

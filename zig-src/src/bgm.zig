@@ -1,8 +1,11 @@
 const std = @import("std");
-const sdl = @import("sdl2");
-const mixer = @cImport({
-    @cInclude("SDL2/SDL_mixer.h");
-});
+// const sdl = @import("sdl2");
+// const mixer = @cImport({
+//     @cInclude("SDL2/SDL_mixer.h");
+// });
+
+const MainModule = @import("./main.zig");
+const mixer = MainModule.sdl;
 
 const Song = struct {
     filename: [*c]const u8,
