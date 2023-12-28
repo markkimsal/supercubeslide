@@ -33,19 +33,25 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
     // exe.addModule("sdl2", sdk.getWrapperModule());
     // exe.addModule("sdl-native", sdk.getNativeModule());
     if (exe.target.isWindows()) {
-        exe.addIncludePath(.{ .path = "/usr/include/" });
-        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-gnu/libSDL2/" });
-        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-gnu/SDL2_image/" });
-        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-gnu/SDL2_image/optional/" });
-        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-gnu/SDL_ttf/" });
-        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-gnu/SDL_mixer/" });
-        exe.linkSystemLibrary("SDL2_image");
-        exe.linkSystemLibrary("SDL2_mixer");
-        exe.linkSystemLibrary("SDL2_ttf");
-        // exe.linkSystemLibrary("jpeg");
-        // exe.linkSystemLibrary("libpng");
-        exe.linkSystemLibrary("libtiff-5");
-        exe.linkSystemLibrary("libwebp-7");
+        exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_ttf/include/" });
+        exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_mixer/include/" });
+        exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_image/include/" });
+        exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2/include/" });
+
+        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_image/lib/x64/" });
+        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_image/lib/x64/optional/" });
+        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_ttf/lib/x64" });
+        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_mixer/lib/x64" });
+        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_mixer/lib/x64/optional/" });
+        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2/lib/x64" });
+        exe.linkSystemLibraryName("SDL2");
+        exe.linkSystemLibraryName("SDL2_image");
+        exe.linkSystemLibraryName("SDL2_mixer");
+        exe.linkSystemLibraryName("SDL2_ttf");
+        // exe.linkSystemLibraryName("libogg-0");
+        // exe.linkSystemLibraryName("libmodplug-1");
+        // exe.linkSystemLibraryName("tiff-5");
+        // exe.linkSystemLibraryName("webp-7");
     }
     if (exe.target.isLinux()) {
         exe.linkSystemLibrary("SDL2_image");
