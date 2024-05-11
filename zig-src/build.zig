@@ -19,6 +19,9 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
     // Create a new instance of the SDL2 Sdk
     // const sdk = Sdk.init(b, null);
 
+    // cross compiling requires pre-built folders
+    const prebuilt_sdl_folder = b.option([]const u8, "prebuilt-sdl", "Absolute path to cross-compiled SDL2 family of libraries");
+
     const exe = b.addExecutable(.{
         .name = "supercubeslide",
         // In this case the main source file is merely a path, however, in more
@@ -27,42 +30,47 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
         .target = target,
         .optimize = optimize,
     });
+
     // sdk.link(exe, .dynamic);
     // exe.addModule("sdl2", sdk.getWrapperModule());
     // exe.addModule("sdl-native", sdk.getNativeModule());
     // if (exe.root_module.target.result.os.tag == .windows) {
     if (target.result.os.tag == .windows) {
+        const lib_path = prebuilt_sdl_folder orelse "./prebuilt/x86_64-windows-gnu";
+        var   concat_buffer: [250]u8 = undefined;
+        const start: usize = 0;
+        const buffer_slice = concat_buffer[start..];
+        // const sdl_path = try std.fmt.bufPrint(buffer_slice, "{s}{s}", .{ lib_path, "/SDL2/x86_64-w64-mingw32/" });
 
-        exe.addIncludePath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2/x86_64-w64-mingw32/include/" });
-        exe.addIncludePath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2/x86_64-w64-mingw32/include/SDL2" });
+        const include_folders = 
+            \\/SDL2/x86_64-w64-mingw32/include/,
+            \\/SDL2/x86_64-w64-mingw32/include/SDL2/,
+            \\/SDL2_ttf/x86_64-w64-mingw32/include/SDL2/,
+            \\/SDL2_image/x86_64-w64-mingw32/include/SDL2/,
+            \\/SDL2_mixer/x86_64-w64-mingw32/include/SDL2/,
+            \\
+        ;
+        var iter = std.mem.split(u8, include_folders, ",\n");
+        while (iter.next()) |f| {
+            exe.addIncludePath(.{ .cwd_relative = try std.fmt.bufPrint(buffer_slice, "{s}{s}", .{lib_path, f })});
+        }
+        const lib_folders = 
+            \\/SDL2/x86_64-w64-mingw32/bin/,
+            \\/SDL2/x86_64-w64-mingw32/lib/,
+            \\/SDL2_ttf/x86_64-w64-mingw32/bin/,
+            \\/SDL2_ttf/x86_64-w64-mingw32/lib/,
+            \\/SDL2_image/x86_64-w64-mingw32/bin/,
+            \\/SDL2_image/x86_64-w64-mingw32/lib/,
+            \\/SDL2_mixer/x86_64-w64-mingw32/bin/,
+            \\/SDL2_mixer/x86_64-w64-mingw32/lib/,
+            \\
+        ;
 
-        exe.addIncludePath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2_ttf/x86_64-w64-mingw32/include/SDL2/" });
-        exe.addIncludePath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2_image/x86_64-w64-mingw32/include/SDL2/" });
-        exe.addIncludePath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2_mixer/x86_64-w64-mingw32/include/SDL2/" });
-        // exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_mixer/include/" });
-        // exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_image/include/" });
+        iter = std.mem.split(u8, lib_folders, ",\n");
+        while (iter.next()) |f| {
+            exe.addLibraryPath(.{ .cwd_relative = try std.fmt.bufPrint(buffer_slice, "{s}{s}", .{lib_path, f })});
+        }
 
-        // exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_image/lib/x64/" });
-        // exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_image/lib/x64/optional/" });
-        // exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_ttf/lib/x64" });
-        // exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_mixer/lib/x64" });
-        // exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_mixer/lib/x64/optional/" });
-
-        exe.addLibraryPath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2/x86_64-w64-mingw32/bin" });
-        exe.addLibraryPath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2_mixer/x86_64-w64-mingw32/bin" });
-
-        exe.addLibraryPath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2/x86_64-w64-mingw32/lib" });
-        exe.addLibraryPath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2_mixer/x86_64-w64-mingw32/lib" });
-        // exe.addLibraryPath(.{ .cwd_relative = "./prebuilt/x86_64-windows-gnu/SDL2_mixer/bin" });
-        exe.addLibraryPath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2_image/x86_64-w64-mingw32/bin" });
-        exe.addLibraryPath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2_image/x86_64-w64-mingw32/lib" });
-        // exe.addLibraryPath(.{ .cwd_relative = "./prebuilt/x86_64-windows-gnu/SDL2_image/bin" });
-        exe.addLibraryPath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2_ttf/x86_64-w64-mingw32/bin" });
-        exe.addLibraryPath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2_ttf/x86_64-w64-mingw32/lib" });
-        // exe.addLibraryPath(.{ .cwd_relative = "./prebuilt/x86_64-windows-gnu/SDL2_ttf/bin" });
-        // exe.addLibraryPath(.{ .cwd_relative = "./prebuilt/x86_64-windows-gnu/SDL2/bin/" });
-
-        // b.installBinFile("SDL2.dll", "SDL2.dll");
         exe.linkSystemLibrary("mingw32");
         exe.linkSystemLibrary2("SDL2",
         .{ .preferred_link_mode = .static,
@@ -90,16 +98,49 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
         // exe.linkSystemLibraryName("libmodplug-1");
         // exe.linkSystemLibraryName("tiff-5");
         // exe.linkSystemLibraryName("webp-7");
+    } else if (target.result.os.tag == .macos) {
+        exe.addIncludePath(.{
+            .cwd_relative = "/include"
+        });
+        exe.linkFramework("OpenGL");
+        exe.linkFramework("Metal");
+        exe.linkFramework("CoreVideo");
+        exe.linkFramework("CoreMedia");
+        exe.linkFramework("Cocoa");
+        exe.linkFramework("IOKit");
+        exe.linkFramework("ForceFeedback");
+        exe.linkFramework("Carbon");
+        exe.linkFramework("CoreAudio");
+        exe.linkFramework("AudioToolbox");
+        exe.linkFramework("Foundation");
+        exe.linkFramework("CoreFoundation");
+        exe.linkFramework("AppKit");
+        exe.linkFramework("CoreGraphics");
+        exe.linkFramework("CoreServices");
+        exe.linkSystemLibrary("objc");
+        exe.addIncludePath(.{
+            .path = "/SDKs/sdk-macos-13.3/root/usr/include"
+        });
+        exe.addLibraryPath(.{
+            .path = "/SDKs/sdk-macos-13.3/root/usr/lib"
+        });
+        exe.addFrameworkPath(.{
+            .path = "/SDKs/sdk-macos-13.3/root/System/Library/Frameworks"
+        });
+        exe.linkSystemLibrary("jpeg");
+        exe.linkSystemLibrary("libpng");
+        // exe.linkSystemLibrary("tiff");
+        // exe.linkSystemLibrary("webp");
+        exe.linkSystemLibrary("ttf");
+    } else {
+        exe.linkSystemLibrary("SDL2_image");
+        exe.linkSystemLibrary("SDL2_mixer");
+        exe.linkSystemLibrary("SDL2_ttf");
+        exe.linkSystemLibrary("jpeg");
+        exe.linkSystemLibrary("libpng");
+        exe.linkSystemLibrary("tiff");
+        exe.linkSystemLibrary("webp");
     }
-    // if (target.isLinux()) {
-    //     exe.linkSystemLibrary("SDL2_image");
-    //     exe.linkSystemLibrary("SDL2_mixer");
-    //     exe.linkSystemLibrary("SDL2_ttf");
-    //     exe.linkSystemLibrary("jpeg");
-    //     exe.linkSystemLibrary("libpng");
-    //     exe.linkSystemLibrary("tiff");
-    //     exe.linkSystemLibrary("webp");
-    // }
 
     installStaticResources(exe);
     exe.linkLibC();
