@@ -27,32 +27,64 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
         .target = target,
         .optimize = optimize,
     });
-    installStaticResources(exe);
-    exe.linkLibC();
     // sdk.link(exe, .dynamic);
     // exe.addModule("sdl2", sdk.getWrapperModule());
     // exe.addModule("sdl-native", sdk.getNativeModule());
     // if (exe.root_module.target.result.os.tag == .windows) {
     if (target.result.os.tag == .windows) {
-        exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_ttf/include/" });
-        exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_mixer/include/" });
-        exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_image/include/" });
-        exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-gnu/SDL2/include/" });
-        exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-gnu/SDL2/include/SDL2/" });
 
-        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_image/lib/x64/" });
-        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_image/lib/x64/optional/" });
-        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_ttf/lib/x64" });
-        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_mixer/lib/x64" });
-        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_mixer/lib/x64/optional/" });
-        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-gnu/SDL2/bin/" });
-        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-gnu/SDL2/lib/" });
+        exe.addIncludePath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2/x86_64-w64-mingw32/include/" });
+        exe.addIncludePath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2/x86_64-w64-mingw32/include/SDL2" });
+
+        exe.addIncludePath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2_ttf/x86_64-w64-mingw32/include/SDL2/" });
+        exe.addIncludePath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2_image/x86_64-w64-mingw32/include/SDL2/" });
+        exe.addIncludePath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2_mixer/x86_64-w64-mingw32/include/SDL2/" });
+        // exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_mixer/include/" });
+        // exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_image/include/" });
+
+        // exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_image/lib/x64/" });
+        // exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_image/lib/x64/optional/" });
+        // exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_ttf/lib/x64" });
+        // exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_mixer/lib/x64" });
+        // exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_mixer/lib/x64/optional/" });
+
+        exe.addLibraryPath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2/x86_64-w64-mingw32/bin" });
+        exe.addLibraryPath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2_mixer/x86_64-w64-mingw32/bin" });
+
+        exe.addLibraryPath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2/x86_64-w64-mingw32/lib" });
+        exe.addLibraryPath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2_mixer/x86_64-w64-mingw32/lib" });
+        // exe.addLibraryPath(.{ .cwd_relative = "./prebuilt/x86_64-windows-gnu/SDL2_mixer/bin" });
+        exe.addLibraryPath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2_image/x86_64-w64-mingw32/bin" });
+        exe.addLibraryPath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2_image/x86_64-w64-mingw32/lib" });
+        // exe.addLibraryPath(.{ .cwd_relative = "./prebuilt/x86_64-windows-gnu/SDL2_image/bin" });
+        exe.addLibraryPath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2_ttf/x86_64-w64-mingw32/bin" });
+        exe.addLibraryPath(.{ .cwd_relative = "prebuilt/x86_64-windows-gnu/SDL2_ttf/x86_64-w64-mingw32/lib" });
+        // exe.addLibraryPath(.{ .cwd_relative = "./prebuilt/x86_64-windows-gnu/SDL2_ttf/bin" });
+        // exe.addLibraryPath(.{ .cwd_relative = "./prebuilt/x86_64-windows-gnu/SDL2/bin/" });
+
+        // b.installBinFile("SDL2.dll", "SDL2.dll");
         exe.linkSystemLibrary("mingw32");
-        exe.linkSystemLibrary("SDL2");
-        // exe.linkSystemLibraryName("SDL2main");
-        exe.linkSystemLibrary("SDL2_image");
-        exe.linkSystemLibrary("SDL2_mixer");
-        exe.linkSystemLibrary("SDL2_ttf");
+        exe.linkSystemLibrary2("SDL2",
+        .{ .preferred_link_mode = .static,
+            .use_pkg_config = .no,
+         }
+        );
+        // exe.linkSystemLibrary("SDL2main");
+        exe.linkSystemLibrary2("SDL2_image",
+        .{ .preferred_link_mode = .static,
+            .use_pkg_config = .no,
+         }
+        );
+        exe.linkSystemLibrary2("SDL2_mixer",
+        .{ .preferred_link_mode = .static,
+            .use_pkg_config = .no,
+         }
+        );
+        exe.linkSystemLibrary2("SDL2_ttf",
+        .{ .preferred_link_mode = .static,
+            .use_pkg_config = .no,
+         }
+        );
         // exe.linkSystemLibraryName("stdc");
         // exe.linkSystemLibraryName("libogg-0");
         // exe.linkSystemLibraryName("libmodplug-1");
@@ -68,6 +100,9 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
     //     exe.linkSystemLibrary("tiff");
     //     exe.linkSystemLibrary("webp");
     // }
+
+    installStaticResources(exe);
+    exe.linkLibC();
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).

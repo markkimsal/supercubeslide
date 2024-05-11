@@ -1,6 +1,6 @@
 const std = @import("std");
 pub const sdl = @cImport({
-    @cInclude("SDL2/SDL.h");
+    @cInclude("SDL.h");
     @cInclude("SDL_image.h");
     @cInclude("SDL_ttf.h");
     @cInclude("SDL_mixer.h");
