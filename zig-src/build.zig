@@ -1,5 +1,5 @@
 const std = @import("std");
-const Sdk = @import("mods/sdl-zig/Sdk.zig"); // Import the Sdk at build time
+// const Sdk = @import("mods/sdl-zig/Sdk.zig"); // Import the Sdk at build time
 
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
@@ -32,36 +32,42 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
     // sdk.link(exe, .dynamic);
     // exe.addModule("sdl2", sdk.getWrapperModule());
     // exe.addModule("sdl-native", sdk.getNativeModule());
-    if (exe.target.isWindows()) {
+    // if (exe.root_module.target.result.os.tag == .windows) {
+    if (target.result.os.tag == .windows) {
         exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_ttf/include/" });
         exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_mixer/include/" });
         exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_image/include/" });
-        exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2/include/" });
+        exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-gnu/SDL2/include/" });
+        exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-gnu/SDL2/include/SDL2/" });
 
         exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_image/lib/x64/" });
         exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_image/lib/x64/optional/" });
         exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_ttf/lib/x64" });
         exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_mixer/lib/x64" });
         exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_mixer/lib/x64/optional/" });
-        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2/lib/x64" });
-        exe.linkSystemLibraryName("SDL2");
-        exe.linkSystemLibraryName("SDL2_image");
-        exe.linkSystemLibraryName("SDL2_mixer");
-        exe.linkSystemLibraryName("SDL2_ttf");
+        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-gnu/SDL2/bin/" });
+        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-gnu/SDL2/lib/" });
+        exe.linkSystemLibrary("mingw32");
+        exe.linkSystemLibrary("SDL2");
+        // exe.linkSystemLibraryName("SDL2main");
+        exe.linkSystemLibrary("SDL2_image");
+        exe.linkSystemLibrary("SDL2_mixer");
+        exe.linkSystemLibrary("SDL2_ttf");
+        // exe.linkSystemLibraryName("stdc");
         // exe.linkSystemLibraryName("libogg-0");
         // exe.linkSystemLibraryName("libmodplug-1");
         // exe.linkSystemLibraryName("tiff-5");
         // exe.linkSystemLibraryName("webp-7");
     }
-    if (exe.target.isLinux()) {
-        exe.linkSystemLibrary("SDL2_image");
-        exe.linkSystemLibrary("SDL2_mixer");
-        exe.linkSystemLibrary("SDL2_ttf");
-        exe.linkSystemLibrary("jpeg");
-        exe.linkSystemLibrary("libpng");
-        exe.linkSystemLibrary("tiff");
-        exe.linkSystemLibrary("webp");
-    }
+    // if (target.isLinux()) {
+    //     exe.linkSystemLibrary("SDL2_image");
+    //     exe.linkSystemLibrary("SDL2_mixer");
+    //     exe.linkSystemLibrary("SDL2_ttf");
+    //     exe.linkSystemLibrary("jpeg");
+    //     exe.linkSystemLibrary("libpng");
+    //     exe.linkSystemLibrary("tiff");
+    //     exe.linkSystemLibrary("webp");
+    // }
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).
@@ -108,25 +114,26 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
 }
 
 fn installStaticResources(exe: *std.Build.Step.Compile) void {
-    exe.addAnonymousModule("loadingscreen.png", .{
-        .source_file = std.build.FileSource.relative("../media/loadingscreen.png"),
+    exe.root_module.addAnonymousImport("loadingscreen.png", .{
+        // exe.addAnonymousModule("loadingscreen.png", .{
+        .root_source_file = std.Build.LazyPath.relative("../media/loadingscreen.png"),
     });
-    exe.addAnonymousModule("background.png", .{
-        .source_file = std.build.FileSource.relative("../media/background.png"),
+    exe.root_module.addAnonymousImport("background.png", .{
+        .root_source_file = std.Build.LazyPath.relative("../media/background.png"),
     });
-    exe.addAnonymousModule("cube_a.png", .{
-        .source_file = std.build.FileSource.relative("../media/block_a.png"),
+    exe.root_module.addAnonymousImport("cube_a.png", .{
+        .root_source_file = std.Build.LazyPath.relative("../media/block_a.png"),
     });
-    exe.addAnonymousModule("cube_b.png", .{
-        .source_file = std.build.FileSource.relative("../media/block_b.png"),
+    exe.root_module.addAnonymousImport("cube_b.png", .{
+        .root_source_file = std.Build.LazyPath.relative("../media/block_b.png"),
     });
-    exe.addAnonymousModule("cube_c.png", .{
-        .source_file = std.build.FileSource.relative("../media/block_c.png"),
+    exe.root_module.addAnonymousImport("cube_c.png", .{
+        .root_source_file = std.Build.LazyPath.relative("../media/block_c.png"),
     });
-    exe.addAnonymousModule("cube_d.png", .{
-        .source_file = std.build.FileSource.relative("../media/block_d.png"),
+    exe.root_module.addAnonymousImport("cube_d.png", .{
+        .root_source_file = std.Build.LazyPath.relative("../media/block_d.png"),
     });
-    exe.addAnonymousModule("freesansbold.ttf", .{
-        .source_file = std.build.FileSource.relative("../media/freesansbold.ttf"),
+    exe.root_module.addAnonymousImport("freesansbold.ttf", .{
+        .root_source_file = std.Build.LazyPath.relative("../media/freesansbold.ttf"),
     });
 }

@@ -54,19 +54,19 @@ pub const AttractMode = struct {
             return;
         }
 
-        var text1 = try renderTextSolid(self.font, "Press [ENTER] to start.", Color.black);
-        var text2 = try renderTextSolid(self.font, "[N] Next Song", Color.black);
-        var text4 = try renderTextSolid(self.font, "[M] Mute Music ", Color.black);
-        var text3 = try renderTextSolid(self.font, "[H] for Help", Color.black);
+        const text1 = try renderTextSolid(self.font, "Press [ENTER] to start.", Color.black);
+        const text2 = try renderTextSolid(self.font, "[N] Next Song", Color.black);
+        const text4 = try renderTextSolid(self.font, "[M] Mute Music ", Color.black);
+        const text3 = try renderTextSolid(self.font, "[H] for Help", Color.black);
         defer sdl.SDL_FreeSurface(text1);
         defer sdl.SDL_FreeSurface(text2);
         defer sdl.SDL_FreeSurface(text3);
         defer sdl.SDL_FreeSurface(text4);
 
-        var textext1 = try createTextureFromSurface(renderer, text1);
-        var textext2 = try createTextureFromSurface(renderer, text2);
-        var textext3 = try createTextureFromSurface(renderer, text3);
-        var textext4 = try createTextureFromSurface(renderer, text4);
+        const textext1 = try createTextureFromSurface(renderer, text1);
+        const textext2 = try createTextureFromSurface(renderer, text2);
+        const textext3 = try createTextureFromSurface(renderer, text3);
+        const textext4 = try createTextureFromSurface(renderer, text4);
         defer sdl.SDL_DestroyTexture(textext1);
         defer sdl.SDL_DestroyTexture(textext2);
         defer sdl.SDL_DestroyTexture(textext3);

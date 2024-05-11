@@ -35,8 +35,8 @@ var curr_song: ?*mixer.Mix_Music = null;
 
 pub fn start_song(song_index: usize) void {
     std.log.info(" song index {}", .{song_index});
-    var music = mixer.Mix_Init(mixer.MIX_INIT_MOD | mixer.MIX_INIT_MP3 | mixer.MIX_INIT_OGG);
-    var opened = mixer.Mix_OpenAudio(48000, mixer.AUDIO_S16, 2, 4096);
+    const music = mixer.Mix_Init(mixer.MIX_INIT_MOD | mixer.MIX_INIT_MP3 | mixer.MIX_INIT_OGG);
+    const opened = mixer.Mix_OpenAudio(48000, mixer.AUDIO_S16, 2, 4096);
     _ = opened;
     _ = mixer.Mix_Volume(-1, 21);
     _ = mixer.Mix_VolumeMusic(12);
@@ -47,7 +47,7 @@ pub fn start_song(song_index: usize) void {
     curr_song = mixer.Mix_LoadMUS(@as([*c]const u8, @ptrCast(printed)));
     if (curr_song) |s| {
         _ = s;
-        var yes = mixer.Mix_PlayMusic(curr_song.?, 0);
+        const yes = mixer.Mix_PlayMusic(curr_song.?, 0);
         std.log.info("yes {}", .{yes});
         _ = music;
     } else {

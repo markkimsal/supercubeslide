@@ -47,7 +47,7 @@ pub fn clearSprites() void {
 }
 
 pub fn genSprite(tex_tag: BlockTextureTags, x_size: i32, y_size: i32) ?*Sprite {
-    var s: *Sprite = sprite_allocator.create(Sprite) catch {
+    const s: *Sprite = sprite_allocator.create(Sprite) catch {
         return null;
     };
     s.* = Sprite.init(tex_tag, x_size, y_size);
