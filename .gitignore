@@ -3,3 +3,5 @@
 *~
 media/assets/
 mediasrc/*.xcf
+zig-src/zig-cache
+zig-src/zig-out
