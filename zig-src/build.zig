@@ -20,7 +20,17 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
     // const sdk = Sdk.init(b, null);
 
     // cross compiling requires pre-built folders
-    const prebuilt_sdl_folder = b.option([]const u8, "prebuilt-sdl", "Absolute path to cross-compiled SDL2 family of libraries");
+    const prebuilt_sdl_folder = b.option(
+        []const u8,
+        "prebuilt-sdl",
+        "Absolute path to cross-compiled SDL2 family of libraries"
+    );
+    const macos_sysroot_path = b.option(
+        []const u8,
+        "sysroot-path",
+        "Absolute path to cross-compiled SDL2 family of libraries"
+    );
+
 
     const exe = b.addExecutable(.{
         .name = "supercubeslide",
@@ -99,9 +109,44 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
         // exe.linkSystemLibraryName("tiff-5");
         // exe.linkSystemLibraryName("webp-7");
     } else if (target.result.os.tag == .macos) {
-        exe.addIncludePath(.{
-            .cwd_relative = "/include"
-        });
+        // exe.addIncludePath(.{
+        //     .cwd_relative = "/include"
+        // });
+        const lib_path = prebuilt_sdl_folder orelse ".";
+        const sysroot_path = macos_sysroot_path orelse ".";
+        var   concat_buffer: [250]u8 = undefined;
+        const start: usize = 0;
+        const buffer_slice = concat_buffer[start..];
+ 
+        const include_folders = 
+            \\/SDL2/x86_64-w64-mingw32/include/,
+            \\/SDL2/x86_64-w64-mingw32/include/SDL2/,
+            \\/SDL2_ttf/x86_64-w64-mingw32/include/SDL2/,
+            \\/SDL2_image/x86_64-w64-mingw32/include/SDL2/,
+            \\/SDL2_mixer/x86_64-w64-mingw32/include/SDL2/,
+            \\
+        ;
+        var iter = std.mem.split(u8, include_folders, ",\n");
+        while (iter.next()) |f| {
+            exe.addIncludePath(.{ .cwd_relative = try std.fmt.bufPrint(buffer_slice, "{s}{s}", .{lib_path, f })});
+        }
+
+        const include_sysroot_folders = 
+            \\/usr/include,"
+            \\/usr/lib,"
+            \\/System/Library/Frameworks,
+            \\
+        ;
+        iter = std.mem.split(u8, include_sysroot_folders, ",\n");
+        while (iter.next()) |f| {
+            exe.addIncludePath(.{ .cwd_relative = try std.fmt.bufPrint(buffer_slice, "{s}{s}", .{sysroot_path, f })});
+        }
+
+        exe.linkFramework("SDL2");
+        exe.linkFramework("SDL2_ttf");
+        exe.linkFramework("SDL2_image");
+        exe.linkFramework("SDL2_mixer");
+
         exe.linkFramework("OpenGL");
         exe.linkFramework("Metal");
         exe.linkFramework("CoreVideo");
@@ -118,20 +163,11 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
         exe.linkFramework("CoreGraphics");
         exe.linkFramework("CoreServices");
         exe.linkSystemLibrary("objc");
-        exe.addIncludePath(.{
-            .path = "/SDKs/sdk-macos-13.3/root/usr/include"
-        });
-        exe.addLibraryPath(.{
-            .path = "/SDKs/sdk-macos-13.3/root/usr/lib"
-        });
-        exe.addFrameworkPath(.{
-            .path = "/SDKs/sdk-macos-13.3/root/System/Library/Frameworks"
-        });
-        exe.linkSystemLibrary("jpeg");
-        exe.linkSystemLibrary("libpng");
+        // exe.linkSystemLibrary("jpeg");
+        // exe.linkSystemLibrary("libpng");
         // exe.linkSystemLibrary("tiff");
         // exe.linkSystemLibrary("webp");
-        exe.linkSystemLibrary("ttf");
+        // exe.linkSystemLibrary("ttf");
     } else {
         exe.linkSystemLibrary("SDL2_image");
         exe.linkSystemLibrary("SDL2_mixer");
@@ -140,6 +176,7 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
         exe.linkSystemLibrary("libpng");
         exe.linkSystemLibrary("tiff");
         exe.linkSystemLibrary("webp");
+        exe.linkSystemLibrary("GL");
     }
 
     installStaticResources(exe);
