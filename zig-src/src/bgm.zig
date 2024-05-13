@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 // const sdl = @import("sdl2");
 // const mixer = @cImport({
 //     @cInclude("SDL2/SDL_mixer.h");
@@ -38,12 +39,15 @@ pub fn start_song(song_index: usize) void {
     const music = mixer.Mix_Init(mixer.MIX_INIT_MOD | mixer.MIX_INIT_MP3 | mixer.MIX_INIT_OGG);
     const opened = mixer.Mix_OpenAudio(48000, mixer.AUDIO_S16, 2, 4096);
     _ = opened;
-    _ = mixer.Mix_Volume(-1, 21);
-    _ = mixer.Mix_VolumeMusic(12);
+    _ = mixer.Mix_Volume(-1, mixer.MIX_MAX_VOLUME/2);
+    _ = mixer.Mix_VolumeMusic(mixer.MIX_MAX_VOLUME/2);
 
     const filename = song_list[song_index].filename;
     var buffer = [_]u8{undefined} ** 100;
-    const printed = std.fmt.bufPrint(&buffer, "../media/music/{s}", .{filename}) catch "out-of-memory";
+    const printed = std.fmt.bufPrint(&buffer, "media/music/{s}", .{filename}) catch "out-of-memory";
+    if (builtin.os.tag == .windows) {
+        std.mem.replaceScalar(u8, printed, '/', '\\');
+    }
     curr_song = mixer.Mix_LoadMUS(@as([*c]const u8, @ptrCast(printed)));
     if (curr_song) |s| {
         _ = s;
