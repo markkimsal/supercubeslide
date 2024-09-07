@@ -20,7 +20,7 @@ pub fn main() !void {
     }
     defer sdl.SDL_Quit();
 
-    var window = sdl.SDL_CreateWindow(
+    const window = sdl.SDL_CreateWindow(
         "Super Cube Slide",
         sdl.SDL_WINDOWPOS_CENTERED,
         sdl.SDL_WINDOWPOS_CENTERED,
@@ -46,7 +46,7 @@ pub fn main() !void {
 
     var poll_event: sdl.SDL_Event = undefined;
     mainLoop: while (true) {
-        var had_event = sdl.SDL_PollEvent(&poll_event);
+        const had_event = sdl.SDL_PollEvent(&poll_event);
         if (had_event > 0) {
             const consumed: bool = switch (poll_event.type) {
                 sdl.SDL_QUIT => break :mainLoop,
@@ -71,10 +71,10 @@ pub fn main() !void {
                 }
             }
         }
-        var next_mode = game_mode.update();
+        const next_mode = game_mode.update();
         if (next_mode) |mode_type| {
             std.log.info("switching to new game mode: {?}", .{@intFromEnum(mode_type)});
-            var new_mode = switch (mode_type) {
+            const new_mode = switch (mode_type) {
                 GameModeType.Attract => GameModes.GameMode{ .attract = try AttractMode.AttractMode.init(renderer) },
                 GameModeType.TimedPlay => GameModes.GameMode{ .timed_play = try TimedPlayMode.init(renderer) },
                 // GameModeType.TimedPlay => try AttractMode.AttractMode.init(&renderer),

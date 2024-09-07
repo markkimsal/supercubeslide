@@ -33,7 +33,7 @@ pub const TimedPlayMode = struct {
             return err;
         };
         var cube_a = @embedFile("cube_a.png");
-        var cube_texture = SpriteModule.loadTextureMem(renderer, cube_a[0..], SpriteModule.ImgFormat.png) catch |err| {
+        const cube_texture = SpriteModule.loadTextureMem(renderer, cube_a[0..], SpriteModule.ImgFormat.png) catch |err| {
             return err;
         };
         var sprite = Sprite.init(BlockTextureTags.A, 24, 24);
@@ -80,8 +80,8 @@ pub const TimedPlayMode = struct {
                 rect.x += self.play_field_offset_x; // playfield centering on background
                 rect.y += self.play_field_offset_y; // playfield centering on background
                 if (actor.desaturate != 0.0) {
-                    var alpha_blend = actor.desaturate * 255;
-                    var alpha_blend_2 = @as(u8, 255 - @as(u8, @intFromFloat(alpha_blend)));
+                    const alpha_blend = actor.desaturate * 255;
+                    const alpha_blend_2 = @as(u8, 255 - @as(u8, @intFromFloat(alpha_blend)));
                     _ = sdl.SDL_SetTextureAlphaMod(actor.getTexture(), alpha_blend_2);
                     _ = sdl.SDL_RenderCopy(renderer, actor.getTexture(), null, &rect);
                     _ = sdl.SDL_SetTextureAlphaMod(actor.getTexture(), 255);
@@ -214,16 +214,16 @@ pub const TimedPlayMode = struct {
             return;
         }
         const animation = &self.animation.?;
-        var delta: u32 = @as(u32, @intCast(sdl.SDL_GetTicks64() - self.animation.?.t0));
+        const delta: u32 = @as(u32, @intCast(sdl.SDL_GetTicks64() - self.animation.?.t0));
         switch (animation.anim_type) {
             AnimationType.RemoveCol => {
-                var desaturate_percent: f64 = @as(f64, @floatFromInt(delta)) / @as(f64, @floatFromInt(animation.duration));
+                const desaturate_percent: f64 = @as(f64, @floatFromInt(delta)) / @as(f64, @floatFromInt(animation.duration));
                 for (0..self.play_field.band_height) |y| {
                     self.play_field.field[y][self.col_removal_idx.?].desaturate = desaturate_percent;
                 }
             },
             AnimationType.RemoveRow => {
-                var desaturate_percent: f64 = @as(f64, @floatFromInt(delta)) / @as(f64, @floatFromInt(animation.duration));
+                const desaturate_percent: f64 = @as(f64, @floatFromInt(delta)) / @as(f64, @floatFromInt(animation.duration));
                 for (0..self.play_field.band_width) |x| {
                     self.play_field.field[self.row_removal_idx.?][x].desaturate = desaturate_percent;
                 }
@@ -349,7 +349,7 @@ pub const TimedPlayMode = struct {
 
     fn nextLevel(self: *TimedPlayMode) void {
         self.level_number = self.level_number + 1;
-        var band_w: u8 = 4 + @as(u8, @intCast(@divTrunc(self.level_number, 10)));
+        const band_w: u8 = 4 + @as(u8, @intCast(@divTrunc(self.level_number, 10)));
         self.play_field.populateField(self.level_number, band_w, band_w);
 
         for (self.play_field.actors.items) |*actor| {

@@ -45,9 +45,9 @@ pub const PlayField = struct {
         self.band_height = band_h;
         self.band_width = band_w;
         for (0..self.band_height) |y| {
-            var yy = @as(i32, @intCast(y));
+            const yy = @as(i32, @intCast(y));
             for (0..self.band_width) |x| {
-                var xx = @as(i32, @intCast(x));
+                const xx = @as(i32, @intCast(x));
                 {
                     for (0..level_number) |_| {
                         _ = rand.next();
@@ -139,8 +139,8 @@ pub const PlayField = struct {
     }
 
     pub fn moveActor(self: *PlayField) bool {
-        var actor = &self.actors.items[0];
-        var rect = actor.rect;
+        const actor = &self.actors.items[0];
+        const rect = actor.rect;
 
         // corner positions cause no movement
         if (rect.x == -1 and rect.y == -1) return false;
@@ -149,19 +149,19 @@ pub const PlayField = struct {
         if (rect.x == -1 and rect.y == self.band_height) return false;
 
         if (rect.x == -1) {
-            var new_actor = self.moveRowRight(@as(usize, @intCast(rect.y)), actor);
+            const new_actor = self.moveRowRight(@as(usize, @intCast(rect.y)), actor);
             _ = new_actor;
         }
         if (rect.x == self.band_width) {
-            var new_actor = self.moveRowLeft(@as(usize, @intCast(rect.y)), actor);
+            const new_actor = self.moveRowLeft(@as(usize, @intCast(rect.y)), actor);
             _ = new_actor;
         }
         if (rect.y == -1) {
-            var new_actor = self.moveColDown(@as(usize, @intCast(rect.x)), actor);
+            const new_actor = self.moveColDown(@as(usize, @intCast(rect.x)), actor);
             _ = new_actor;
         }
         if (rect.y == self.band_height) {
-            var new_actor = self.moveColUp(@as(usize, @intCast(rect.x)), actor);
+            const new_actor = self.moveColUp(@as(usize, @intCast(rect.x)), actor);
             _ = new_actor;
         }
         self.move_count += 1;
@@ -172,7 +172,7 @@ pub const PlayField = struct {
     fn moveRowRight(self: *PlayField, band_row: usize, actor: *Sprite) ?*Sprite {
         const bw: usize = @as(usize, self.band_width);
         var x: usize = bw - 1;
-        var actor_texture_tag = actor.texture_tag;
+        const actor_texture_tag = actor.texture_tag;
 
         actor.texture_tag = self.field[band_row][x].texture_tag;
         while (x > 0) : (x -= 1) {
@@ -186,7 +186,7 @@ pub const PlayField = struct {
     fn moveRowLeft(self: *PlayField, band_row: usize, actor: *Sprite) ?*Sprite {
         const bw: usize = @intCast(self.band_width);
         var x: usize = 0;
-        var actor_texture_tag = actor.texture_tag;
+        const actor_texture_tag = actor.texture_tag;
 
         actor.texture_tag = self.field[band_row][x].texture_tag;
         while (x < bw - 1) : (x += 1) {
@@ -200,7 +200,7 @@ pub const PlayField = struct {
     fn moveColDown(self: *PlayField, band_col: usize, actor: *Sprite) ?*Sprite {
         const bh: usize = @intCast(self.band_height);
         var y: usize = bh - 1;
-        var actor_texture_tag = actor.texture_tag;
+        const actor_texture_tag = actor.texture_tag;
 
         actor.texture_tag = self.field[y][band_col].texture_tag;
         while (y > 0) : (y -= 1) {
@@ -214,7 +214,7 @@ pub const PlayField = struct {
     fn moveColUp(self: *PlayField, band_col: usize, actor: *Sprite) ?*Sprite {
         const bw: usize = @as(usize, @intCast(self.band_height));
         var y: usize = 0;
-        var actor_texture_tag = actor.texture_tag;
+        const actor_texture_tag = actor.texture_tag;
 
         actor.texture_tag = self.field[y][band_col].texture_tag;
         while (y < bw - 1) : (y += 1) {

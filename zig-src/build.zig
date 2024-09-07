@@ -1,5 +1,5 @@
 const std = @import("std");
-const Sdk = @import("mods/sdl-zig/Sdk.zig"); // Import the Sdk at build time
+// const Sdk = @import("mods/sdl-zig/Sdk.zig"); // Import the Sdk at build time
 
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
@@ -19,6 +19,19 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
     // Create a new instance of the SDL2 Sdk
     // const sdk = Sdk.init(b, null);
 
+    // cross compiling requires pre-built folders
+    const prebuilt_sdl_folder = b.option(
+        []const u8,
+        "prebuilt-sdl",
+        "Absolute path to cross-compiled SDL2 family of libraries"
+    );
+    const macos_sysroot_path = b.option(
+        []const u8,
+        "sysroot-path",
+        "Absolute path to cross-compiled SDL2 family of libraries"
+    );
+
+
     const exe = b.addExecutable(.{
         .name = "supercubeslide",
         // In this case the main source file is merely a path, however, in more
@@ -27,33 +40,135 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
         .target = target,
         .optimize = optimize,
     });
-    installStaticResources(exe);
-    exe.linkLibC();
+
     // sdk.link(exe, .dynamic);
     // exe.addModule("sdl2", sdk.getWrapperModule());
     // exe.addModule("sdl-native", sdk.getNativeModule());
-    if (exe.target.isWindows()) {
-        exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_ttf/include/" });
-        exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_mixer/include/" });
-        exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_image/include/" });
-        exe.addIncludePath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2/include/" });
+    // if (exe.root_module.target.result.os.tag == .windows) {
+    if (target.result.os.tag == .windows) {
+        const lib_path = prebuilt_sdl_folder orelse "./prebuilt/x86_64-windows-gnu";
+        var   concat_buffer: [250]u8 = undefined;
+        const start: usize = 0;
+        const buffer_slice = concat_buffer[start..];
+        // const sdl_path = try std.fmt.bufPrint(buffer_slice, "{s}{s}", .{ lib_path, "/SDL2/x86_64-w64-mingw32/" });
 
-        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_image/lib/x64/" });
-        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_image/lib/x64/optional/" });
-        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_ttf/lib/x64" });
-        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_mixer/lib/x64" });
-        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2_mixer/lib/x64/optional/" });
-        exe.addLibraryPath(.{ .path = "./prebuilt/x86_64-windows-msvc/SDL2/lib/x64" });
-        exe.linkSystemLibraryName("SDL2");
-        exe.linkSystemLibraryName("SDL2_image");
-        exe.linkSystemLibraryName("SDL2_mixer");
-        exe.linkSystemLibraryName("SDL2_ttf");
+        const include_folders = 
+            \\/SDL2/x86_64-w64-mingw32/include/,
+            \\/SDL2/x86_64-w64-mingw32/include/SDL2/,
+            \\/SDL2_ttf/x86_64-w64-mingw32/include/SDL2/,
+            \\/SDL2_image/x86_64-w64-mingw32/include/SDL2/,
+            \\/SDL2_mixer/x86_64-w64-mingw32/include/SDL2/,
+            \\
+        ;
+        var iter = std.mem.split(u8, include_folders, ",\n");
+        while (iter.next()) |f| {
+            exe.addIncludePath(.{ .cwd_relative = try std.fmt.bufPrint(buffer_slice, "{s}{s}", .{lib_path, f })});
+        }
+        const lib_folders = 
+            \\/SDL2/x86_64-w64-mingw32/bin/,
+            \\/SDL2/x86_64-w64-mingw32/lib/,
+            \\/SDL2_ttf/x86_64-w64-mingw32/bin/,
+            \\/SDL2_ttf/x86_64-w64-mingw32/lib/,
+            \\/SDL2_image/x86_64-w64-mingw32/bin/,
+            \\/SDL2_image/x86_64-w64-mingw32/lib/,
+            \\/SDL2_mixer/x86_64-w64-mingw32/bin/,
+            \\/SDL2_mixer/x86_64-w64-mingw32/lib/,
+            \\
+        ;
+
+        iter = std.mem.split(u8, lib_folders, ",\n");
+        while (iter.next()) |f| {
+            exe.addLibraryPath(.{ .cwd_relative = try std.fmt.bufPrint(buffer_slice, "{s}{s}", .{lib_path, f })});
+        }
+
+        exe.linkSystemLibrary("mingw32");
+        exe.linkSystemLibrary2("SDL2",
+        .{ .preferred_link_mode = .static,
+            .use_pkg_config = .no,
+         }
+        );
+        // exe.linkSystemLibrary("SDL2main");
+        exe.linkSystemLibrary2("SDL2_image",
+        .{ .preferred_link_mode = .static,
+            .use_pkg_config = .no,
+         }
+        );
+        exe.linkSystemLibrary2("SDL2_mixer",
+        .{ .preferred_link_mode = .static,
+            .use_pkg_config = .no,
+         }
+        );
+        exe.linkSystemLibrary2("SDL2_ttf",
+        .{ .preferred_link_mode = .static,
+            .use_pkg_config = .no,
+         }
+        );
+        // exe.linkSystemLibraryName("stdc");
         // exe.linkSystemLibraryName("libogg-0");
         // exe.linkSystemLibraryName("libmodplug-1");
         // exe.linkSystemLibraryName("tiff-5");
         // exe.linkSystemLibraryName("webp-7");
-    }
-    if (exe.target.isLinux()) {
+    } else if (target.result.os.tag == .macos) {
+        // exe.addIncludePath(.{
+        //     .cwd_relative = "/include"
+        // });
+        const lib_path = prebuilt_sdl_folder orelse ".";
+        const sysroot_path = macos_sysroot_path orelse ".";
+        var   concat_buffer: [250]u8 = undefined;
+        const start: usize = 0;
+        const buffer_slice = concat_buffer[start..];
+ 
+        const include_folders = 
+            \\/SDL2/x86_64-w64-mingw32/include/,
+            \\/SDL2/x86_64-w64-mingw32/include/SDL2/,
+            \\/SDL2_ttf/x86_64-w64-mingw32/include/SDL2/,
+            \\/SDL2_image/x86_64-w64-mingw32/include/SDL2/,
+            \\/SDL2_mixer/x86_64-w64-mingw32/include/SDL2/,
+            \\
+        ;
+        var iter = std.mem.split(u8, include_folders, ",\n");
+        while (iter.next()) |f| {
+            exe.addIncludePath(.{ .cwd_relative = try std.fmt.bufPrint(buffer_slice, "{s}{s}", .{lib_path, f })});
+        }
+
+        const include_sysroot_folders = 
+            \\/usr/include,"
+            \\/usr/lib,"
+            \\/System/Library/Frameworks,
+            \\
+        ;
+        iter = std.mem.split(u8, include_sysroot_folders, ",\n");
+        while (iter.next()) |f| {
+            exe.addIncludePath(.{ .cwd_relative = try std.fmt.bufPrint(buffer_slice, "{s}{s}", .{sysroot_path, f })});
+        }
+
+        exe.linkFramework("SDL2");
+        exe.linkFramework("SDL2_ttf");
+        exe.linkFramework("SDL2_image");
+        exe.linkFramework("SDL2_mixer");
+
+        exe.linkFramework("OpenGL");
+        exe.linkFramework("Metal");
+        exe.linkFramework("CoreVideo");
+        exe.linkFramework("CoreMedia");
+        exe.linkFramework("Cocoa");
+        exe.linkFramework("IOKit");
+        exe.linkFramework("ForceFeedback");
+        exe.linkFramework("Carbon");
+        exe.linkFramework("CoreAudio");
+        exe.linkFramework("AudioToolbox");
+        exe.linkFramework("Foundation");
+        exe.linkFramework("CoreFoundation");
+        exe.linkFramework("AppKit");
+        exe.linkFramework("CoreGraphics");
+        exe.linkFramework("CoreServices");
+        exe.linkSystemLibrary("objc");
+        // exe.linkSystemLibrary("jpeg");
+        // exe.linkSystemLibrary("libpng");
+        // exe.linkSystemLibrary("tiff");
+        // exe.linkSystemLibrary("webp");
+        // exe.linkSystemLibrary("ttf");
+    } else {
         exe.linkSystemLibrary("SDL2_image");
         exe.linkSystemLibrary("SDL2_mixer");
         exe.linkSystemLibrary("SDL2_ttf");
@@ -61,7 +176,11 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
         exe.linkSystemLibrary("libpng");
         exe.linkSystemLibrary("tiff");
         exe.linkSystemLibrary("webp");
+        exe.linkSystemLibrary("GL");
     }
+
+    installStaticResources(exe);
+    exe.linkLibC();
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).
@@ -108,25 +227,26 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
 }
 
 fn installStaticResources(exe: *std.Build.Step.Compile) void {
-    exe.addAnonymousModule("loadingscreen.png", .{
-        .source_file = std.build.FileSource.relative("../media/loadingscreen.png"),
+    exe.root_module.addAnonymousImport("loadingscreen.png", .{
+        // exe.addAnonymousModule("loadingscreen.png", .{
+        .root_source_file = std.Build.LazyPath.relative("../media/loadingscreen.png"),
     });
-    exe.addAnonymousModule("background.png", .{
-        .source_file = std.build.FileSource.relative("../media/background.png"),
+    exe.root_module.addAnonymousImport("background.png", .{
+        .root_source_file = std.Build.LazyPath.relative("../media/background.png"),
     });
-    exe.addAnonymousModule("cube_a.png", .{
-        .source_file = std.build.FileSource.relative("../media/block_a.png"),
+    exe.root_module.addAnonymousImport("cube_a.png", .{
+        .root_source_file = std.Build.LazyPath.relative("../media/block_a.png"),
     });
-    exe.addAnonymousModule("cube_b.png", .{
-        .source_file = std.build.FileSource.relative("../media/block_b.png"),
+    exe.root_module.addAnonymousImport("cube_b.png", .{
+        .root_source_file = std.Build.LazyPath.relative("../media/block_b.png"),
     });
-    exe.addAnonymousModule("cube_c.png", .{
-        .source_file = std.build.FileSource.relative("../media/block_c.png"),
+    exe.root_module.addAnonymousImport("cube_c.png", .{
+        .root_source_file = std.Build.LazyPath.relative("../media/block_c.png"),
     });
-    exe.addAnonymousModule("cube_d.png", .{
-        .source_file = std.build.FileSource.relative("../media/block_d.png"),
+    exe.root_module.addAnonymousImport("cube_d.png", .{
+        .root_source_file = std.Build.LazyPath.relative("../media/block_d.png"),
     });
-    exe.addAnonymousModule("freesansbold.ttf", .{
-        .source_file = std.build.FileSource.relative("../media/freesansbold.ttf"),
+    exe.root_module.addAnonymousImport("freesansbold.ttf", .{
+        .root_source_file = std.Build.LazyPath.relative("../media/freesansbold.ttf"),
     });
 }

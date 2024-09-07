@@ -10,6 +10,6 @@ pub const TaggedAnimation = union(enum) {
 
 pub const Animation = struct {
     duration: u32,
-    t0: usize,
+    t0: u64,
     anim_type: AnimationType,
 };
