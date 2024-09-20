@@ -44,6 +44,12 @@ pub const GameMode = union(enum) {
         }
     }
 
+    pub fn on_touch(self: *Self, event: *sdl.SDL_Event) bool {
+        switch (self.*) {
+            inline else => |*case| return case.on_touch(event),
+        }
+    }
+
     pub fn update(self: *Self) ?GameModeType {
         switch (self.*) {
             inline else => |*case| return case.update(),
