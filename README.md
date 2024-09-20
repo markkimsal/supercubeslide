@@ -16,3 +16,6 @@ Todos:
 ====
 [] Cross compile with SDL dlls
 [] Cross compile on MacOSX
+
+Compile for Android
+=========================

@@ -148,6 +148,32 @@ pub const TimedPlayMode = struct {
         return true;
     }
 
+    pub fn on_touch(self: *TimedPlayMode, event: *sdl.SDL_Event) bool {
+        if (self.animation != null) {
+            return false;
+        }
+        switch (event.type) {
+            sdl.SDL_FINGERUP => {
+                if (self.play_field.moveActor()) {
+                    self.recordMove();
+                    return true;
+                }
+            },
+            sdl.SDL_FINGERMOTION => {
+                for (self.play_field.actors.items) |*actor| {
+                    if (event.tfinger.dx > 0.0) {
+                        self.moveCounterClockwise(actor);
+                    } else {
+                        self.moveClockwise(actor);
+                    }
+                }
+                return true;
+            },
+            else => {},
+        }
+        return false;
+    }
+
     pub fn on_key(self: *TimedPlayMode, key_event: *sdl.SDL_KeyboardEvent) bool {
         var keymatch = false;
         for (self.play_field.actors.items) |*actor| {

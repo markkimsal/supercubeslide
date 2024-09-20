@@ -108,6 +108,12 @@ pub const AttractMode = struct {
         return true;
     }
 
+    pub fn on_touch(self: AttractMode, event: *sdl.SDL_Event) bool {
+        _ = self;
+        _ = event;
+        return false;
+    }
+
     pub fn update(self: *AttractMode) ?GameModes.GameModeType {
         if (self.next_mode) |mode| {
             return mode;

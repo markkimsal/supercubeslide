@@ -56,9 +56,13 @@ pub fn main() !void {
                     const consumed = game_mode.on_key(&poll_event.key);
                     break :sw_blk consumed;
                 },
-                sdl.SDL_MOUSEBUTTONDOWN, sdl.SDL_MOUSEWHEEL => sw_blk: {
+                sdl.SDL_MOUSEBUTTONUP, sdl.SDL_MOUSEBUTTONDOWN, sdl.SDL_MOUSEWHEEL, => sw_blk: {
                     const consumed = game_mode.on_input(&poll_event);
                     break :sw_blk consumed;
+                },
+                sdl.SDL_FINGERUP, sdl.SDL_FINGERMOTION, sdl.SDL_FINGERDOWN => sw_blk2: {
+                    const consumed = game_mode.on_touch(&poll_event);
+                    break :sw_blk2 consumed;
                 },
                 else => false,
             };
