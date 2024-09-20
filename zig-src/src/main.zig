@@ -15,6 +15,8 @@ const SpriteMod = @import("sprite.zig");
 
 const ANDROID = true;
 
+const heap_alloc = std.heap.c_allocator;
+
 var current_song_index: usize = 0;
 pub fn main() !void {
     if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO | sdl.SDL_INIT_EVENTS | sdl.SDL_INIT_AUDIO) < 0) {
@@ -24,16 +26,23 @@ pub fn main() !void {
 
     _ = sdl.SDL_SetHint(sdl.SDL_HINT_MOUSE_TOUCH_EVENTS, "1");
     _ = sdl.SDL_SetHint(sdl.SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+    var mode = heap_alloc.create(sdl.SDL_DisplayMode) catch sdlPanic();
+    _ = sdl.SDL_GetDisplayMode(0, 0, mode);
+
     var  window_flags: c_uint = sdl.SDL_WINDOW_SHOWN;
     if (ANDROID) {
         window_flags = sdl.SDL_WINDOW_FULLSCREEN | sdl.SDL_WINDOW_BORDERLESS;
+    } else {
+        // windowed mode, ovverride mode w/h
+        mode.w = 720;
+        mode.h = 1080;
     }
     const window = sdl.SDL_CreateWindow(
         "Super Cube Slide",
         sdl.SDL_WINDOWPOS_CENTERED,
         sdl.SDL_WINDOWPOS_CENTERED,
-        640,
-        480,
+        720,
+        780,
         window_flags
     ) orelse sdlPanic();
     defer sdl.SDL_DestroyWindow(window);
@@ -109,7 +118,7 @@ pub fn main() !void {
         // try renderer.clear();
         if (sdl.SDL_RenderClear(renderer) > 0) {}
 
-        game_mode.paint(renderer);
+        game_mode.paint(renderer, mode);
         sdl.SDL_RenderPresent(renderer);
         // renderer.present();
     }

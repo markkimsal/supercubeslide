@@ -33,8 +33,11 @@ pub const AttractMode = struct {
         };
     }
 
-    pub fn paint(self: *AttractMode, renderer: *sdl.SDL_Renderer) void {
-        if (sdl.SDL_RenderCopy(renderer, self.background_image, null, null) > 0) {}
+    pub fn paint(self: *AttractMode, renderer: *sdl.SDL_Renderer, mode: *sdl.SDL_DisplayMode) void {
+
+        _ = mode;
+        const dst = sdl.SDL_Rect{ .x = 0, .y = 0, .w = 800, .h = 600 };
+        if (sdl.SDL_RenderCopy(renderer, self.background_image, null, &dst) > 0) {}
         // renderer.copy(self.background_image, null, null) catch {
         //     return;
         // };

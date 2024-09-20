@@ -57,8 +57,31 @@ pub const TimedPlayMode = struct {
         return play_mode;
     }
 
-    pub fn paint(self: *TimedPlayMode, renderer: *sdl.SDL_Renderer) void {
-        if (sdl.SDL_RenderCopy(renderer, self.background_image, null, null) > 0) {
+    pub fn paint(self: *TimedPlayMode, renderer: *sdl.SDL_Renderer, mode: *sdl.SDL_DisplayMode) void {
+        // _ = mode;
+        // std.log.debug("x: {d},  y: {d}", .{mode.w, mode.h});
+        const src_w = 640;
+        const src_h = 480;
+
+        var dst = sdl.SDL_Rect{ .x = @divFloor((mode.w - src_w), 2), .y = @divFloor((mode.h - src_h), 2), .w = src_w, .h = src_h };
+        const is_vertical = mode.h > mode.w;
+        if(is_vertical == true) {
+            // stretch out
+            dst.x = 0;
+            dst.w = mode.w;
+            const ratio: f64 = (@as(f64, @floatFromInt(mode.w)) / @as(f64, @floatFromInt(src_w)));
+
+            dst.h = @as(c_int, @intFromFloat(@round(src_h * ratio)));
+            dst.y = @divFloor((mode.h - dst.h), 2);
+            std.log.debug("dst {}, mode {}", .{dst, mode});
+            // dst.w += 200;
+            // dst.h += 200;
+        }
+
+        self.play_field_offset_x = 150 + (@divFloor((mode.w - 640), 2));
+        self.play_field_offset_y = 120 + (@divFloor((mode.h - 480), 2));
+
+        if (sdl.SDL_RenderCopy(renderer, self.background_image, null, &dst) > 0) {
             return;
         }
         // renderer.copy(self.background_image, null, null) catch {

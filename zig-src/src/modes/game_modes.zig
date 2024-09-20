@@ -21,9 +21,9 @@ pub const GameMode = union(enum) {
         }
     }
 
-    pub fn paint(self: *Self, renderer: *sdl.SDL_Renderer) void {
+    pub fn paint(self: *Self, renderer: *sdl.SDL_Renderer, mode: *sdl.SDL_DisplayMode) void {
         switch (self.*) {
-            inline else => |*case| case.paint(renderer),
+            inline else => |*case| case.paint(renderer, mode),
         }
     }
 
