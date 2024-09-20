@@ -13,6 +13,8 @@ const GameModes = @import("modes/game_modes.zig");
 const GameModeType = @import("modes/game_modes.zig").GameModeType;
 const SpriteMod = @import("sprite.zig");
 
+const ANDROID = true;
+
 var current_song_index: usize = 0;
 pub fn main() !void {
     if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO | sdl.SDL_INIT_EVENTS | sdl.SDL_INIT_AUDIO) < 0) {
@@ -20,29 +22,39 @@ pub fn main() !void {
     }
     defer sdl.SDL_Quit();
 
+    _ = sdl.SDL_SetHint(sdl.SDL_HINT_MOUSE_TOUCH_EVENTS, "1");
+    _ = sdl.SDL_SetHint(sdl.SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+    var  window_flags: c_uint = sdl.SDL_WINDOW_SHOWN;
+    if (ANDROID) {
+        window_flags = sdl.SDL_WINDOW_FULLSCREEN | sdl.SDL_WINDOW_BORDERLESS;
+    }
     const window = sdl.SDL_CreateWindow(
         "Super Cube Slide",
         sdl.SDL_WINDOWPOS_CENTERED,
         sdl.SDL_WINDOWPOS_CENTERED,
         640,
         480,
-        sdl.SDL_WINDOW_SHOWN,
+        window_flags
     ) orelse sdlPanic();
     defer sdl.SDL_DestroyWindow(window);
 
     bgm.start_song(current_song_index);
     defer bgm.close();
 
-    var renderer = sdl.SDL_CreateRenderer(window, -1, sdl.SDL_RENDERER_ACCELERATED) orelse sdlPanic();
+    var renderer_flags: c_uint = sdl.SDL_RENDERER_ACCELERATED;
+    if (ANDROID)  {
+        renderer_flags |=  sdl.SDL_RENDERER_PRESENTVSYNC;
+    }
+    var renderer = sdl.SDL_CreateRenderer(window, -1, renderer_flags) orelse sdlPanic();
     defer sdl.SDL_DestroyRenderer(renderer);
 
     SpriteMod.initTextures(&renderer) catch |err| {
         std.log.err("{}", .{err});
-        return;
+        return err;
     };
 
-    var game_mode: GameModes.GameMode = GameModes.GameMode{ .attract = try AttractMode.AttractMode.init(renderer) };
-    // var game_mode: GameModes.GameMode = GameModes.GameMode{ .timed_play = try TimedPlayMode.init(&renderer) };
+    // var game_mode: GameModes.GameMode = GameModes.GameMode{ .attract = try AttractMode.AttractMode.init(renderer) };
+    var game_mode: GameModes.GameMode = GameModes.GameMode{ .timed_play = try TimedPlayMode.init(renderer) };
 
     var poll_event: sdl.SDL_Event = undefined;
     mainLoop: while (true) {
