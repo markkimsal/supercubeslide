@@ -55,7 +55,6 @@ pub fn main() !void {
         renderer_flags |=  sdl.SDL_RENDERER_PRESENTVSYNC;
     }
     var renderer = sdl.SDL_CreateRenderer(window, -1, renderer_flags) orelse sdlPanic();
-    defer sdl.SDL_DestroyRenderer(renderer);
 
     SpriteMod.initTextures(&renderer) catch |err| {
         std.log.err("{}", .{err});
@@ -121,7 +120,8 @@ pub fn main() !void {
         }
 
         // try renderer.setColorRGB(0xF7, 0xA4, 0x1D);
-        if (sdl.SDL_SetRenderDrawColor(renderer, 0xF7, 0xA4, 0x1D, 255) < 0) {}
+        // if (sdl.SDL_SetRenderDrawColor(renderer, 0xF7, 0xA4, 0x1D, 255) < 0) {}
+        if (sdl.SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0x00) < 0) {}
 
         // try renderer.clear();
         if (sdl.SDL_RenderClear(renderer) > 0) {}
