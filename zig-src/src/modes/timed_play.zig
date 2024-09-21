@@ -69,7 +69,32 @@ pub const TimedPlayMode = struct {
         // _ = mode;
         const src_w = 640;
         const src_h = 480;
+        var base_tex = sdl.SDL_CreateTexture(renderer, mode.format, sdl.SDL_TEXTUREACCESS_TARGET, src_w, src_h);
+        // var base_tex: ?*sdl.SDL_Texture = sdl.SDL_CreateTexture(renderer, mode.format, sdl.SDL_TEXTUREACCESS_TARGET, src_w, src_h);
+        if (base_tex) |*surf| {
+            _ = surf;
+        }
+        if (sdl.SDL_SetRenderTarget(renderer, base_tex.?) > 0) {
+            std.log.err("unable to set renderer target", .{});
+            // sdl.SDL_FreeSurface(base_surf.?.*);
+            sdl.SDL_free(@ptrCast(base_tex.?));
+            return;
+        }
 
+        // self.play_field_offset_x = @as(c_int, @intFromFloat(220)) + (@divFloor((mode.w - dst.w), 2));
+        // self.play_field_offset_y = @as(c_int, @intFromFloat(150)) + (@divFloor((mode.h - dst.h), 2));
+
+        // self.play_field_offset_x = @intFromFloat(@round(@as(f64, @floatFromInt(self.play_field_offset_x)) * ratio));
+        // self.play_field_offset_y = @intFromFloat(@round(@as(f64, @floatFromInt(self.play_field_offset_y)) * ratio));
+        if (sdl.SDL_RenderCopy(renderer, self.background_image, null, null) > 0) {
+            return;
+        }
+        // renderer.copy(self.background_image, null, null) catch {
+        //     return;
+        // };
+        self.paintActors(renderer);
+        self.paintBand(renderer);
+        _ = sdl.SDL_SetRenderTarget(renderer, null);
         var dst = sdl.SDL_Rect{ .x = @divFloor((mode.w - src_w), 2), .y = @divFloor((mode.h - src_h), 2), .w = src_w, .h = src_h };
         const is_vertical = mode.h > mode.w;
         var ratio: f64 = (@as(f64, @floatFromInt(mode.w)) / @as(f64, @floatFromInt(src_w)));
@@ -90,19 +115,9 @@ pub const TimedPlayMode = struct {
             dst.x = @divFloor((mode.w - dst.w), 2);
         }
 
-        self.play_field_offset_x = @as(c_int, @intFromFloat(220)) + (@divFloor((mode.w - dst.w), 2));
-        self.play_field_offset_y = @as(c_int, @intFromFloat(150)) + (@divFloor((mode.h - dst.h), 2));
 
-        // self.play_field_offset_x = @intFromFloat(@round(@as(f64, @floatFromInt(self.play_field_offset_x)) * ratio));
-        // self.play_field_offset_y = @intFromFloat(@round(@as(f64, @floatFromInt(self.play_field_offset_y)) * ratio));
-        if (sdl.SDL_RenderCopy(renderer, self.background_image, null, &dst) > 0) {
-            return;
-        }
-        // renderer.copy(self.background_image, null, null) catch {
-        //     return;
-        // };
-        self.paintActors(renderer);
-        self.paintBand(renderer);
+        _ = sdl.SDL_RenderCopy(renderer, base_tex, null, &dst);
+        sdl.SDL_DestroyTexture(base_tex);
     }
 
     pub fn paintActors(self: TimedPlayMode, renderer: *sdl.SDL_Renderer) void {
