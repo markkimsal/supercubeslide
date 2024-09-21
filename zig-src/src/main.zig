@@ -70,6 +70,14 @@ pub fn main() !void {
         const had_event = sdl.SDL_PollEvent(&poll_event);
         if (had_event > 0) {
             const consumed: bool = switch (poll_event.type) {
+                sdl.SDL_WINDOWEVENT => sw_blk: {
+                    //TODO: handle multiple windows?
+                    if (poll_event.window.event == sdl.SDL_WINDOWEVENT_RESIZED) {
+                        mode.w = poll_event.window.data1;
+                        mode.h = poll_event.window.data2;
+                    }
+                    break :sw_blk true;
+                },
                 sdl.SDL_QUIT => break :mainLoop,
                 sdl.SDL_KEYDOWN => sw_blk: {
                     if (poll_event.key.keysym.sym == sdl.SDLK_ESCAPE) break :mainLoop;
