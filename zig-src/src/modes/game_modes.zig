@@ -21,9 +21,9 @@ pub const GameMode = union(enum) {
         }
     }
 
-    pub fn paint(self: *Self, renderer: *sdl.SDL_Renderer) void {
+    pub fn paint(self: *Self, renderer: *sdl.SDL_Renderer, mode: *sdl.SDL_DisplayMode) void {
         switch (self.*) {
-            inline else => |*case| case.paint(renderer),
+            inline else => |*case| case.paint(renderer, mode),
         }
     }
 
@@ -41,6 +41,12 @@ pub const GameMode = union(enum) {
     pub fn on_input(self: *Self, event: *sdl.SDL_Event) bool {
         switch (self.*) {
             inline else => |*case| return case.on_input(event),
+        }
+    }
+
+    pub fn on_touch(self: *Self, event: *sdl.SDL_Event) bool {
+        switch (self.*) {
+            inline else => |*case| return case.on_touch(event),
         }
     }
 

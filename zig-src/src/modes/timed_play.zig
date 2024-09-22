@@ -23,6 +23,10 @@ pub const TimedPlayMode = struct {
     col_removal_idx: ?usize,
     row_removal_idx: ?usize,
     animation: ?Animation,
+    touchdown: c_int,
+    in_drag: bool,
+    drag_dx: c_int,
+    drag_ticks: c_int,
     move_count: u16 = 0,
     level_number: u16 = 0,
     score: i16 = 0,
@@ -37,7 +41,7 @@ pub const TimedPlayMode = struct {
             return err;
         };
         var sprite = Sprite.init(BlockTextureTags.A, 24, 24);
-        sprite.setPosition(-1, -1);
+        sprite.setPosition(-1, 0);
 
         var play_field = PlayField.init(heap_alloc, 5, 5).?;
         play_field.addActor(&sprite) catch {
@@ -50,6 +54,10 @@ pub const TimedPlayMode = struct {
             .next_mode = null,
             .play_field = play_field,
             .animation = null,
+            .touchdown = 0,
+            .in_drag = false,
+            .drag_dx = 0,
+            .drag_ticks = 0,
             .col_removal_idx = null,
             .row_removal_idx = null,
         };
@@ -57,7 +65,27 @@ pub const TimedPlayMode = struct {
         return play_mode;
     }
 
-    pub fn paint(self: *TimedPlayMode, renderer: *sdl.SDL_Renderer) void {
+    pub fn paint(self: *TimedPlayMode, renderer: *sdl.SDL_Renderer, mode: *sdl.SDL_DisplayMode) void {
+        // _ = mode;
+        const src_w = 640;
+        const src_h = 480;
+        var base_tex = sdl.SDL_CreateTexture(renderer, mode.format, sdl.SDL_TEXTUREACCESS_TARGET, src_w, src_h);
+        // var base_tex: ?*sdl.SDL_Texture = sdl.SDL_CreateTexture(renderer, mode.format, sdl.SDL_TEXTUREACCESS_TARGET, src_w, src_h);
+        if (base_tex) |*surf| {
+            _ = surf;
+        }
+        if (sdl.SDL_SetRenderTarget(renderer, base_tex.?) > 0) {
+            std.log.err("unable to set renderer target", .{});
+            // sdl.SDL_FreeSurface(base_surf.?.*);
+            sdl.SDL_free(@ptrCast(base_tex.?));
+            return;
+        }
+
+        // self.play_field_offset_x = @as(c_int, @intFromFloat(220)) + (@divFloor((mode.w - dst.w), 2));
+        // self.play_field_offset_y = @as(c_int, @intFromFloat(150)) + (@divFloor((mode.h - dst.h), 2));
+
+        // self.play_field_offset_x = @intFromFloat(@round(@as(f64, @floatFromInt(self.play_field_offset_x)) * ratio));
+        // self.play_field_offset_y = @intFromFloat(@round(@as(f64, @floatFromInt(self.play_field_offset_y)) * ratio));
         if (sdl.SDL_RenderCopy(renderer, self.background_image, null, null) > 0) {
             return;
         }
@@ -66,6 +94,30 @@ pub const TimedPlayMode = struct {
         // };
         self.paintActors(renderer);
         self.paintBand(renderer);
+        _ = sdl.SDL_SetRenderTarget(renderer, null);
+        var dst = sdl.SDL_Rect{ .x = @divFloor((mode.w - src_w), 2), .y = @divFloor((mode.h - src_h), 2), .w = src_w, .h = src_h };
+        const is_vertical = mode.h > mode.w;
+        var ratio: f64 = (@as(f64, @floatFromInt(mode.w)) / @as(f64, @floatFromInt(src_w)));
+        if(is_vertical == true) {
+            // stretch out
+            dst.x = 0;
+            dst.w = mode.w;
+
+            dst.h = @as(c_int, @intFromFloat(@round(src_h * ratio)));
+            dst.y = @divFloor((mode.h - dst.h), 2);
+        } else {
+            // stretch out
+            dst.y = 0;
+            dst.h = mode.h;
+
+            ratio = (@as(f64, @floatFromInt(mode.h)) / @as(f64, @floatFromInt(src_h)));
+            dst.w = @as(c_int, @intFromFloat(@round(src_w * ratio)));
+            dst.x = @divFloor((mode.w - dst.w), 2);
+        }
+
+
+        _ = sdl.SDL_RenderCopy(renderer, base_tex, null, &dst);
+        sdl.SDL_DestroyTexture(base_tex);
     }
 
     pub fn paintActors(self: TimedPlayMode, renderer: *sdl.SDL_Renderer) void {
@@ -136,7 +188,7 @@ pub const TimedPlayMode = struct {
                     }
                 }
             },
-            sdl.SDL_MOUSEBUTTONDOWN => {
+            sdl.SDL_MOUSEBUTTONUP => {
                 if (event.button.button == sdl.SDL_BUTTON_MIDDLE or event.button.button == sdl.SDL_BUTTON_LEFT) {
                     if (self.play_field.moveActor()) {
                         self.recordMove();
@@ -146,6 +198,58 @@ pub const TimedPlayMode = struct {
             else => {},
         }
         return true;
+    }
+
+    pub fn on_touch(self: *TimedPlayMode, event: *sdl.SDL_Event) bool {
+        if (self.animation != null) {
+            return false;
+        }
+        switch (event.type) {
+            sdl.SDL_FINGERUP => {
+                if (self.in_drag) {
+                    self.in_drag = false;
+                    self.touchdown = 0;
+                    self.drag_dx = 0;
+                    self.drag_ticks = 0;
+                    return true;
+                }
+                if (self.play_field.moveActor()) {
+                    self.recordMove();
+                    return true;
+                }
+            },
+            sdl.SDL_FINGERMOTION => {
+                self.in_drag = true;
+                const c_delta:c_int = @as(c_int, @intFromFloat(event.tfinger.dx * 1000));
+                // std.log.debug("c_drag_dx {d} drag_ticks {d} {d:0.3}", .{self.drag_dx, self.drag_ticks, event.tfinger.dx * 1000});
+                // std.log.debug("mod  {d}", .{@mod(self.drag_dx + c_delta,  100)});
+                const scaling_factor = 20;
+
+                if (@divFloor(self.drag_dx + c_delta,  scaling_factor) > self.drag_ticks ) {
+                    self.drag_ticks = @divFloor(self.drag_dx + c_delta, scaling_factor);
+                    for (self.play_field.actors.items) |*actor| {
+                        self.moveClockwise(actor);
+                    }
+                }
+                if (@divFloor(self.drag_dx + c_delta, scaling_factor) < self.drag_ticks ) {
+                    self.drag_ticks = @divFloor(self.drag_dx + c_delta, scaling_factor);
+                    for (self.play_field.actors.items) |*actor| {
+                        self.moveCounterClockwise(actor);
+                    }
+                }
+                self.drag_dx += c_delta;
+                // for (self.play_field.actors.items) |*actor| {
+                //     if (event.tfinger.dx > 0.0) {
+                //         self.moveCounterClockwise(actor);
+                //     } else {
+                //         self.moveClockwise(actor);
+                //     }
+                // }
+                return true;
+            },
+            else => {},
+        }
+        return false;
     }
 
     pub fn on_key(self: *TimedPlayMode, key_event: *sdl.SDL_KeyboardEvent) bool {
