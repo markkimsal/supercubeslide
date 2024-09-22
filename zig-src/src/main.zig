@@ -24,25 +24,29 @@ pub fn main() !void {
     }
     defer sdl.SDL_Quit();
 
-    _ = sdl.SDL_SetHint(sdl.SDL_HINT_MOUSE_TOUCH_EVENTS, "1");
-    _ = sdl.SDL_SetHint(sdl.SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+    if (ANDROID) {
+        _ = sdl.SDL_SetHint(sdl.SDL_HINT_MOUSE_TOUCH_EVENTS, "1");
+        _ = sdl.SDL_SetHint(sdl.SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+    }
+
     var mode = heap_alloc.create(sdl.SDL_DisplayMode) catch sdlPanic();
     _ = sdl.SDL_GetDisplayMode(0, 0, mode);
+    defer sdl.SDL_free(mode);
 
-    var  window_flags: c_uint = sdl.SDL_WINDOW_SHOWN;
+    var  window_flags: c_uint = sdl.SDL_WINDOW_SHOWN | sdl.SDL_WINDOW_RESIZABLE;
     if (ANDROID) {
         window_flags = sdl.SDL_WINDOW_FULLSCREEN | sdl.SDL_WINDOW_BORDERLESS;
     } else {
         // windowed mode, ovverride mode w/h
-        mode.w = 720;
-        mode.h = 1080;
+        mode.w = 640;
+        mode.h = 680;
     }
     const window = sdl.SDL_CreateWindow(
         "Super Cube Slide",
         sdl.SDL_WINDOWPOS_CENTERED,
         sdl.SDL_WINDOWPOS_CENTERED,
-        720,
-        780,
+        mode.w,
+        mode.h,
         window_flags
     ) orelse sdlPanic();
     defer sdl.SDL_DestroyWindow(window);
@@ -131,7 +135,7 @@ pub fn main() !void {
         // renderer.present();
     }
     game_mode.exit();
-    sdl.SDL_DestroyWindow(window);
+    // sdl.SDL_DestroyRenderer(renderer);
 }
 
 fn global_on_key(event: *sdl.SDL_KeyboardEvent) void {

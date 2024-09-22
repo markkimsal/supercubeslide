@@ -188,7 +188,7 @@ pub const TimedPlayMode = struct {
                     }
                 }
             },
-            sdl.SDL_MOUSEBUTTONDOWN => {
+            sdl.SDL_MOUSEBUTTONUP => {
                 if (event.button.button == sdl.SDL_BUTTON_MIDDLE or event.button.button == sdl.SDL_BUTTON_LEFT) {
                     if (self.play_field.moveActor()) {
                         self.recordMove();
@@ -228,13 +228,13 @@ pub const TimedPlayMode = struct {
                 if (@divFloor(self.drag_dx + c_delta,  scaling_factor) > self.drag_ticks ) {
                     self.drag_ticks = @divFloor(self.drag_dx + c_delta, scaling_factor);
                     for (self.play_field.actors.items) |*actor| {
-                        self.moveCounterClockwise(actor);
+                        self.moveClockwise(actor);
                     }
                 }
                 if (@divFloor(self.drag_dx + c_delta, scaling_factor) < self.drag_ticks ) {
                     self.drag_ticks = @divFloor(self.drag_dx + c_delta, scaling_factor);
                     for (self.play_field.actors.items) |*actor| {
-                        self.moveClockwise(actor);
+                        self.moveCounterClockwise(actor);
                     }
                 }
                 self.drag_dx += c_delta;
