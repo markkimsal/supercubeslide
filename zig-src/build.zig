@@ -20,39 +20,25 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
     // const sdk = Sdk.init(b, null);
 
     // cross compiling requires pre-built folders
-    const prebuilt_sdl_folder = b.option(
-        []const u8,
-        "prebuilt-sdl",
-        "Absolute path to cross-compiled SDL2 family of libraries"
-    );
-    const macos_sysroot_path = b.option(
-        []const u8,
-        "sysroot-path",
-        "Absolute path to cross-compiled SDL2 family of libraries"
-    );
+    const prebuilt_sdl_folder = b.option([]const u8, "prebuilt-sdl", "Absolute path to cross-compiled SDL2 family of libraries");
+    const macos_sysroot_path = b.option([]const u8, "sysroot-path", "Absolute path to cross-compiled SDL2 family of libraries");
 
-
-    const exe = b.addExecutable(.{
+    var exe: *std.Build.Step.Compile = undefined;
+    exe = b.addExecutable(.{
         .name = "supercubeslide",
-        // In this case the main source file is merely a path, however, in more
-        // complicated build scripts, this could be a generated file.
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = .{ .cwd_relative = "src/main.zig" },
         .target = target,
         .optimize = optimize,
     });
 
-    // sdk.link(exe, .dynamic);
-    // exe.addModule("sdl2", sdk.getWrapperModule());
-    // exe.addModule("sdl-native", sdk.getNativeModule());
-    // if (exe.root_module.target.result.os.tag == .windows) {
     if (target.result.os.tag == .windows) {
         const lib_path = prebuilt_sdl_folder orelse "./prebuilt/x86_64-windows-gnu";
-        var   concat_buffer: [250]u8 = undefined;
+        var concat_buffer: [250]u8 = undefined;
         const start: usize = 0;
         const buffer_slice = concat_buffer[start..];
         // const sdl_path = try std.fmt.bufPrint(buffer_slice, "{s}{s}", .{ lib_path, "/SDL2/x86_64-w64-mingw32/" });
 
-        const include_folders = 
+        const include_folders =
             \\/SDL2/x86_64-w64-mingw32/include/,
             \\/SDL2/x86_64-w64-mingw32/include/SDL2/,
             \\/SDL2_ttf/x86_64-w64-mingw32/include/SDL2/,
@@ -62,9 +48,9 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
         ;
         var iter = std.mem.split(u8, include_folders, ",\n");
         while (iter.next()) |f| {
-            exe.addIncludePath(.{ .cwd_relative = try std.fmt.bufPrint(buffer_slice, "{s}{s}", .{lib_path, f })});
+            exe.addIncludePath(.{ .cwd_relative = try std.fmt.bufPrint(buffer_slice, "{s}{s}", .{ lib_path, f }) });
         }
-        const lib_folders = 
+        const lib_folders =
             \\/SDL2/x86_64-w64-mingw32/bin/,
             \\/SDL2/x86_64-w64-mingw32/lib/,
             \\/SDL2_ttf/x86_64-w64-mingw32/bin/,
@@ -78,31 +64,27 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
 
         iter = std.mem.split(u8, lib_folders, ",\n");
         while (iter.next()) |f| {
-            exe.addLibraryPath(.{ .cwd_relative = try std.fmt.bufPrint(buffer_slice, "{s}{s}", .{lib_path, f })});
+            exe.addLibraryPath(.{ .cwd_relative = try std.fmt.bufPrint(buffer_slice, "{s}{s}", .{ lib_path, f }) });
         }
 
         exe.linkSystemLibrary("mingw32");
-        exe.linkSystemLibrary2("SDL2",
-        .{ .preferred_link_mode = .static,
+        exe.linkSystemLibrary2("SDL2", .{
+            .preferred_link_mode = .static,
             .use_pkg_config = .no,
-         }
-        );
+        });
         // exe.linkSystemLibrary("SDL2main");
-        exe.linkSystemLibrary2("SDL2_image",
-        .{ .preferred_link_mode = .static,
+        exe.linkSystemLibrary2("SDL2_image", .{
+            .preferred_link_mode = .static,
             .use_pkg_config = .no,
-         }
-        );
-        exe.linkSystemLibrary2("SDL2_mixer",
-        .{ .preferred_link_mode = .static,
+        });
+        exe.linkSystemLibrary2("SDL2_mixer", .{
+            .preferred_link_mode = .static,
             .use_pkg_config = .no,
-         }
-        );
-        exe.linkSystemLibrary2("SDL2_ttf",
-        .{ .preferred_link_mode = .static,
+        });
+        exe.linkSystemLibrary2("SDL2_ttf", .{
+            .preferred_link_mode = .static,
             .use_pkg_config = .no,
-         }
-        );
+        });
         // exe.linkSystemLibraryName("stdc");
         // exe.linkSystemLibraryName("libogg-0");
         // exe.linkSystemLibraryName("libmodplug-1");
@@ -114,11 +96,11 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
         // });
         const lib_path = prebuilt_sdl_folder orelse ".";
         const sysroot_path = macos_sysroot_path orelse ".";
-        var   concat_buffer: [250]u8 = undefined;
+        var concat_buffer: [250]u8 = undefined;
         const start: usize = 0;
         const buffer_slice = concat_buffer[start..];
- 
-        const include_folders = 
+
+        const include_folders =
             \\/SDL2/x86_64-w64-mingw32/include/,
             \\/SDL2/x86_64-w64-mingw32/include/SDL2/,
             \\/SDL2_ttf/x86_64-w64-mingw32/include/SDL2/,
@@ -128,10 +110,10 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
         ;
         var iter = std.mem.split(u8, include_folders, ",\n");
         while (iter.next()) |f| {
-            exe.addIncludePath(.{ .cwd_relative = try std.fmt.bufPrint(buffer_slice, "{s}{s}", .{lib_path, f })});
+            exe.addIncludePath(.{ .cwd_relative = try std.fmt.bufPrint(buffer_slice, "{s}{s}", .{ lib_path, f }) });
         }
 
-        const include_sysroot_folders = 
+        const include_sysroot_folders =
             \\/usr/include,"
             \\/usr/lib,"
             \\/System/Library/Frameworks,
@@ -139,7 +121,7 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
         ;
         iter = std.mem.split(u8, include_sysroot_folders, ",\n");
         while (iter.next()) |f| {
-            exe.addIncludePath(.{ .cwd_relative = try std.fmt.bufPrint(buffer_slice, "{s}{s}", .{sysroot_path, f })});
+            exe.addIncludePath(.{ .cwd_relative = try std.fmt.bufPrint(buffer_slice, "{s}{s}", .{ sysroot_path, f }) });
         }
 
         exe.linkFramework("SDL2");
@@ -169,6 +151,7 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
         // exe.linkSystemLibrary("webp");
         // exe.linkSystemLibrary("ttf");
     } else {
+        exe.linkSystemLibrary("SDL2");
         exe.linkSystemLibrary("SDL2_image");
         exe.linkSystemLibrary("SDL2_mixer");
         exe.linkSystemLibrary("SDL2_ttf");
@@ -212,7 +195,7 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
     // Creates a step for unit testing. This only builds the test executable
     // but does not run it.
     const unit_tests = b.addTest(.{
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = .{ .cwd_relative = "src/main.zig" },
         .target = target,
         .optimize = optimize,
     });
@@ -229,24 +212,24 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
 fn installStaticResources(exe: *std.Build.Step.Compile) void {
     exe.root_module.addAnonymousImport("loadingscreen.png", .{
         // exe.addAnonymousModule("loadingscreen.png", .{
-        .root_source_file = std.Build.LazyPath.relative("../media/loadingscreen.png"),
+        .root_source_file = .{ .cwd_relative = "../media/loadingscreen.png" },
     });
     exe.root_module.addAnonymousImport("background.png", .{
-        .root_source_file = std.Build.LazyPath.relative("../media/background.png"),
+        .root_source_file = .{ .cwd_relative = "../media/background.png" },
     });
     exe.root_module.addAnonymousImport("cube_a.png", .{
-        .root_source_file = std.Build.LazyPath.relative("../media/block_a.png"),
+        .root_source_file = .{ .cwd_relative = "../media/block_a.png" },
     });
     exe.root_module.addAnonymousImport("cube_b.png", .{
-        .root_source_file = std.Build.LazyPath.relative("../media/block_b.png"),
+        .root_source_file = .{ .cwd_relative = "../media/block_b.png" },
     });
     exe.root_module.addAnonymousImport("cube_c.png", .{
-        .root_source_file = std.Build.LazyPath.relative("../media/block_c.png"),
+        .root_source_file = .{ .cwd_relative = "../media/block_c.png" },
     });
     exe.root_module.addAnonymousImport("cube_d.png", .{
-        .root_source_file = std.Build.LazyPath.relative("../media/block_d.png"),
+        .root_source_file = .{ .cwd_relative = "../media/block_d.png" },
     });
     exe.root_module.addAnonymousImport("freesansbold.ttf", .{
-        .root_source_file = std.Build.LazyPath.relative("../media/freesansbold.ttf"),
+        .root_source_file = .{ .cwd_relative = "../media/freesansbold.ttf" },
     });
 }
