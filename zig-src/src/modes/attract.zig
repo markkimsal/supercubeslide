@@ -4,11 +4,13 @@ const MainModule = @import("../main.zig");
 const sdl = MainModule.sdl;
 const GameModes = @import("game_modes.zig");
 const SpriteModule = @import("../sprite.zig");
+const bgm = @import("../bgm.zig");
 
 pub const AttractMode = struct {
     background_image: *sdl.SDL_Texture,
     font: *sdl.TTF_Font,
     next_mode: ?GameModes.GameModeType,
+    display_mode: ?*sdl.SDL_DisplayMode,
 
     pub fn init(renderer: *sdl.SDL_Renderer) !AttractMode {
         const img = @embedFile("loadingscreen.png");
@@ -29,19 +31,57 @@ pub const AttractMode = struct {
         return AttractMode{
             .background_image = texture,
             .next_mode = null,
+            .display_mode = null,
             .font = font.?,
         };
     }
 
     pub fn paint(self: *AttractMode, renderer: *sdl.SDL_Renderer, mode: *sdl.SDL_DisplayMode) void {
 
-        _ = mode;
-        const dst = sdl.SDL_Rect{ .x = 0, .y = 0, .w = 800, .h = 600 };
-        if (sdl.SDL_RenderCopy(renderer, self.background_image, null, &dst) > 0) {}
+        self.display_mode = mode;
+        const src_w = 640;
+        const src_h = 480;
+        // const base_tex = sdl.SDL_CreateTexture(renderer, mode.format, sdl.SDL_TEXTUREACCESS_TARGET, src_w, src_h);
+        const base_tex: ?*sdl.SDL_Texture = sdl.SDL_CreateTexture(renderer, mode.format, sdl.SDL_TEXTUREACCESS_TARGET, src_w, src_h);
+
+        if (sdl.SDL_SetRenderTarget(renderer, base_tex.?) > 0) {
+            std.log.err("unable to set renderer target", .{});
+            sdl.SDL_DestroyTexture(base_tex);
+            return;
+        }
+
+
+        // const dst = sdl.SDL_Rect{ .x = 0, .y = 0, .w = 800, .h = 600 };
+        if (sdl.SDL_RenderCopy(renderer, self.background_image, null, null) > 0) {}
         // renderer.copy(self.background_image, null, null) catch {
         //     return;
         // };
         self.paintInstructors(renderer) catch {};
+
+        _ = sdl.SDL_SetRenderTarget(renderer, null);
+        var dst = sdl.SDL_Rect{ .x = @divFloor((mode.w - src_w), 2), .y = @divFloor((mode.h - src_h), 2), .w = src_w, .h = src_h };
+        const is_vertical = mode.h > mode.w;
+        var ratio: f64 = (@as(f64, @floatFromInt(mode.w)) / @as(f64, @floatFromInt(src_w)));
+        if(is_vertical == true) {
+            // stretch out
+            dst.x = 0;
+            dst.w = mode.w;
+
+            dst.h = @as(c_int, @intFromFloat(@round(src_h * ratio)));
+            dst.y = @divFloor((mode.h - dst.h), 2);
+        } else {
+            // stretch out
+            dst.y = 0;
+            dst.h = mode.h;
+
+            ratio = (@as(f64, @floatFromInt(mode.h)) / @as(f64, @floatFromInt(src_h)));
+            dst.w = @as(c_int, @intFromFloat(@round(src_w * ratio)));
+            dst.x = @divFloor((mode.w - dst.w), 2);
+        }
+
+
+        _ = sdl.SDL_RenderCopy(renderer, base_tex, null, &dst);
+        sdl.SDL_DestroyTexture(base_tex);
     }
 
     pub fn paintInstructors(self: *AttractMode, renderer: *sdl.SDL_Renderer) !void {
@@ -81,6 +121,7 @@ pub const AttractMode = struct {
         if (sdl.SDL_RenderCopy(renderer, textext2, null, &sdl.SDL_Rect{ .x = 330, .y = 117, .w = text2.w, .h = text2.h }) > 0) {}
         if (sdl.SDL_RenderCopy(renderer, textext3, null, &sdl.SDL_Rect{ .x = 330, .y = 142, .w = text3.w, .h = text3.h }) > 0) {}
         if (sdl.SDL_RenderCopy(renderer, textext4, null, &sdl.SDL_Rect{ .x = 330, .y = 167, .w = text4.w, .h = text4.h }) > 0) {}
+
         // renderer.copy(textext1, sdl.SDL_Rect{ .x = 330, .y = 77, .w = text1.ptr.w, .h = text1.ptr.h }, null) catch {};
         // renderer.copy(textext2, sdl.SDL_Rect{ .x = 330, .y = 117, .w = text2.ptr.w, .h = text2.ptr.h }, null) catch {};
         // renderer.copy(textext4, sdl.SDL_Rect{ .x = 330, .y = 142, .w = text4.ptr.w, .h = text4.ptr.h }, null) catch {};
@@ -111,10 +152,16 @@ pub const AttractMode = struct {
         return true;
     }
 
-    pub fn on_touch(self: AttractMode, event: *sdl.SDL_Event) bool {
-        _ = self;
-        _ = event;
-        return false;
+    pub fn on_touch(self: *AttractMode, event: *sdl.SDL_Event) bool {
+        _ = switch (event.tfinger.type) {
+            sdl.SDL_FINGERUP => {
+                self.touch_intersects_menu(event);
+                return true;
+            },
+            else => false,
+        };
+
+        return true;
     }
 
     pub fn update(self: *AttractMode) ?GameModes.GameModeType {
@@ -122,6 +169,57 @@ pub const AttractMode = struct {
             return mode;
         }
         return null;
+    }
+
+    fn touch_intersects_menu(self: *AttractMode, event: *sdl.SDL_Event) void {
+
+        var rect = sdl.SDL_Rect {.x = @as(c_int, @intFromFloat(event.tfinger.x * 100.0)), .y = @as(c_int, @intFromFloat(event.tfinger.y * 100.0)), .w = 2, .h = 2};
+        sdl.SDL_Log("\nfinger up x: %f finger up y: %f.\n",
+        event.tfinger.x * 100,
+        event.tfinger.y * 100
+        );
+        sdl.SDL_Log("\nfinger up x: %d finger up y: %d.\n",
+        @as(c_int,@intFromFloat(event.tfinger.x * 100)),
+        @as(c_int,@intFromFloat(event.tfinger.y * 100))
+        );
+
+
+        sdl.SDL_Log("\n1. touch event at :%d %d.\n", rect.x, rect.y);
+        // scale the 0-99 percent to actual pixels.
+        rect.x = @as(c_int, @divFloor(self.display_mode.?.w * rect.x, 100));
+        rect.y = @as(c_int, @divFloor(self.display_mode.?.h * rect.y, 100));
+        sdl.SDL_Log("\n2. display_mode at :%d %d.\n", self.display_mode.?.w, self.display_mode.?.h);
+        sdl.SDL_Log("\n2. touch event at :%d %d.\n", rect.x, rect.y);
+        const src_w = 640;
+        const src_h = 480;
+
+        // translate the click into the base 640x480 coord space (minus centering padding)
+        const ratio: f64 = (@as(f64, @floatFromInt(self.display_mode.?.w)) / @as(f64, @floatFromInt(src_w)));
+        const is_vertical = self.display_mode.?.h > self.display_mode.?.w;
+        if (is_vertical) {
+            rect.y -= @as(c_int, @intFromFloat(@divFloor((@as(f64, @floatFromInt(self.display_mode.?.h)) - @as(f64, src_h) * ratio), 2)));
+            rect.y = @as(c_int, @intFromFloat(@round(@as(f64, @floatFromInt(rect.y)) / ratio)));
+            rect.x = @as(c_int, @intFromFloat(@round(@as(f64, @floatFromInt(rect.x)) / ratio)));
+        }
+        // std.log.debug("touch event at rect {}", .{rect});
+        sdl.SDL_Log("\n3. touch event at :%d %d.\n", rect.x, rect.y);
+
+        // this should be from the rendered text, just guessing for now
+        const text4 = sdl.SDL_Rect {.x = 0, .y = 0, .w = 220, .h = 20};
+        const menu_item_4 = sdl.SDL_Rect{ .x = 330, .y = 167, .w = text4.w, .h = text4.h };
+        var result_rect = sdl.SDL_Rect{ .x = 0, .y = 7, .w = 0, .h = 0};
+        if (sdl.SDL_IntersectRect(&rect, &menu_item_4, &result_rect) == sdl.SDL_TRUE) {
+            std.log.debug("Intersected with menu item {}", .{result_rect});
+            bgm.pause_music();
+        }
+
+        const text0 = sdl.SDL_Rect {.x = 0, .y = 0, .w = 260, .h = 20};
+        const menu_item_0 = sdl.SDL_Rect{ .x = 330, .y = 77, .w = text0.w, .h = text0.h };
+
+        if (sdl.SDL_IntersectRect(&rect, &menu_item_0, &result_rect) == sdl.SDL_TRUE) {
+            std.log.debug("Intersected with menu item {}", .{result_rect});
+            self.next_mode = GameModes.GameModeType.TimedPlay;
+        }
     }
 };
 
