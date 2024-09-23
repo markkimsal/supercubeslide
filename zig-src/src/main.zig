@@ -13,7 +13,7 @@ const GameModes = @import("modes/game_modes.zig");
 const GameModeType = @import("modes/game_modes.zig").GameModeType;
 const SpriteMod = @import("sprite.zig");
 
-const ANDROID = true;
+const ANDROID = false;
 
 const heap_alloc = std.heap.c_allocator;
 
@@ -65,8 +65,8 @@ pub fn main() !void {
         return err;
     };
 
-    // var game_mode: GameModes.GameMode = GameModes.GameMode{ .attract = try AttractMode.AttractMode.init(renderer) };
-    var game_mode: GameModes.GameMode = GameModes.GameMode{ .timed_play = try TimedPlayMode.init(renderer) };
+    var game_mode: GameModes.GameMode = GameModes.GameMode{ .attract = try AttractMode.AttractMode.init(renderer) };
+    // var game_mode: GameModes.GameMode = GameModes.GameMode{ .timed_play = try TimedPlayMode.init(renderer) };
 
     var poll_event: sdl.SDL_Event = undefined;
     mainLoop: while (true) {
