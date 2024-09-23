@@ -66,18 +66,13 @@ pub const TimedPlayMode = struct {
     }
 
     pub fn paint(self: *TimedPlayMode, renderer: *sdl.SDL_Renderer, mode: *sdl.SDL_DisplayMode) void {
-        // _ = mode;
         const src_w = 640;
         const src_h = 480;
-        var base_tex = sdl.SDL_CreateTexture(renderer, mode.format, sdl.SDL_TEXTUREACCESS_TARGET, src_w, src_h);
-        // var base_tex: ?*sdl.SDL_Texture = sdl.SDL_CreateTexture(renderer, mode.format, sdl.SDL_TEXTUREACCESS_TARGET, src_w, src_h);
-        if (base_tex) |*surf| {
-            _ = surf;
-        }
+        // const base_tex = sdl.SDL_CreateTexture(renderer, mode.format, sdl.SDL_TEXTUREACCESS_TARGET, src_w, src_h);
+        const base_tex: ?*sdl.SDL_Texture = sdl.SDL_CreateTexture(renderer, mode.format, sdl.SDL_TEXTUREACCESS_TARGET, src_w, src_h);
         if (sdl.SDL_SetRenderTarget(renderer, base_tex.?) > 0) {
             std.log.err("unable to set renderer target", .{});
-            // sdl.SDL_FreeSurface(base_surf.?.*);
-            sdl.SDL_free(@ptrCast(base_tex.?));
+            sdl.SDL_DestroyTexture(base_tex);
             return;
         }
 
