@@ -173,10 +173,23 @@ pub const AttractMode = struct {
 
     fn touch_intersects_menu(self: *AttractMode, event: *sdl.SDL_Event) void {
 
-        var rect = sdl.SDL_Rect {.x = @intFromFloat(event.tfinger.x * 100.0), .y = @intFromFloat(event.tfinger.y * 100.0), .w = 2, .h = 2};
+        var rect = sdl.SDL_Rect {.x = @as(c_int, @intFromFloat(event.tfinger.x * 100.0)), .y = @as(c_int, @intFromFloat(event.tfinger.y * 100.0)), .w = 2, .h = 2};
+        sdl.SDL_Log("\nfinger up x: %f finger up y: %f.\n",
+        event.tfinger.x * 100,
+        event.tfinger.y * 100
+        );
+        sdl.SDL_Log("\nfinger up x: %d finger up y: %d.\n",
+        @as(c_int,@intFromFloat(event.tfinger.x * 100)),
+        @as(c_int,@intFromFloat(event.tfinger.y * 100))
+        );
+
+
+        sdl.SDL_Log("\n1. touch event at :%d %d.\n", rect.x, rect.y);
         // scale the 0-99 percent to actual pixels.
-        rect.x = @divFloor(self.display_mode.?.w * rect.x, 100);
-        rect.y = @divFloor(self.display_mode.?.h * rect.y, 100);
+        rect.x = @as(c_int, @divFloor(self.display_mode.?.w * rect.x, 100));
+        rect.y = @as(c_int, @divFloor(self.display_mode.?.h * rect.y, 100));
+        sdl.SDL_Log("\n2. display_mode at :%d %d.\n", self.display_mode.?.w, self.display_mode.?.h);
+        sdl.SDL_Log("\n2. touch event at :%d %d.\n", rect.x, rect.y);
         const src_w = 640;
         const src_h = 480;
 
@@ -184,10 +197,12 @@ pub const AttractMode = struct {
         const ratio: f64 = (@as(f64, @floatFromInt(self.display_mode.?.w)) / @as(f64, @floatFromInt(src_w)));
         const is_vertical = self.display_mode.?.h > self.display_mode.?.w;
         if (is_vertical) {
-            rect.y = @as(c_int, @intFromFloat(@round(@as(f64, @floatFromInt(rect.y)) * ratio)));
-            rect.y -= @divFloor((self.display_mode.?.h - src_h), 2);
+            rect.y -= @as(c_int, @intFromFloat(@divFloor((@as(f64, @floatFromInt(self.display_mode.?.h)) - @as(f64, src_h) * ratio), 2)));
+            rect.y = @as(c_int, @intFromFloat(@round(@as(f64, @floatFromInt(rect.y)) / ratio)));
+            rect.x = @as(c_int, @intFromFloat(@round(@as(f64, @floatFromInt(rect.x)) / ratio)));
         }
         // std.log.debug("touch event at rect {}", .{rect});
+        sdl.SDL_Log("\n3. touch event at :%d %d.\n", rect.x, rect.y);
 
         // this should be from the rendered text, just guessing for now
         const text4 = sdl.SDL_Rect {.x = 0, .y = 0, .w = 220, .h = 20};
