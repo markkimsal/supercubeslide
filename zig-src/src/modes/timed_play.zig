@@ -270,6 +270,10 @@ pub const TimedPlayMode = struct {
                 self.recenterPlayField();
                 keymatch = true;
             }
+
+            if (key_event.keysym.sym == sdl.SDLK_AC_BACK) {
+                self.next_mode = GameModes.GameModeType.Attract;
+            }
         }
         return keymatch;
     }

@@ -33,16 +33,21 @@ var song_list: [3]Song = [3]Song{ Song{
 } };
 
 var curr_song: ?*mixer.Mix_Music = null;
+pub var song_index_: usize = 0;
 
 pub fn start_song(song_index: usize) void {
-    std.log.info(" song index {}", .{song_index});
+    var s_index = song_index;
     const music = mixer.Mix_Init(mixer.MIX_INIT_MOD | mixer.MIX_INIT_MP3 | mixer.MIX_INIT_OGG);
     const opened = mixer.Mix_OpenAudio(48000, mixer.AUDIO_S16, 2, 4096);
     _ = opened;
     _ = mixer.Mix_Volume(-1, mixer.MIX_MAX_VOLUME/2);
     _ = mixer.Mix_VolumeMusic(mixer.MIX_MAX_VOLUME/2);
 
-    const filename = song_list[song_index].filename;
+    if (s_index >= song_list.len) {
+        s_index = s_index % song_list.len;
+    }
+    std.log.info(" song index {}", .{s_index});
+    const filename = song_list[s_index].filename;
     var buffer = [_]u8{undefined} ** 100;
     const printed = std.fmt.bufPrint(&buffer, "media/music/{s}", .{filename}) catch "out-of-memory";
     if (builtin.os.tag == .windows) {
@@ -57,6 +62,7 @@ pub fn start_song(song_index: usize) void {
     } else {
         std.log.err("cannot load song: {s}", .{mixer.SDL_GetError()});
     }
+    song_index_ = s_index;
 }
 
 pub fn pause_music() void {
