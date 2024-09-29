@@ -13,7 +13,7 @@ const GameModes = @import("modes/game_modes.zig");
 const GameModeType = @import("modes/game_modes.zig").GameModeType;
 const SpriteMod = @import("sprite.zig");
 
-const ANDROID = false;
+const ANDROID = true;
 
 const heap_alloc = std.heap.c_allocator;
 pub var mode: *sdl.SDL_DisplayMode = undefined;
@@ -27,6 +27,10 @@ pub fn main() !void {
 
     if (!ANDROID) {
         _ = sdl.SDL_SetHint(sdl.SDL_HINT_MOUSE_TOUCH_EVENTS, "1");
+        _ = sdl.SDL_SetHint(sdl.SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+        _ = sdl.SDL_SetHint(sdl.SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
+    } else {
+        _ = sdl.SDL_SetHint(sdl.SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
         _ = sdl.SDL_SetHint(sdl.SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
         _ = sdl.SDL_SetHint(sdl.SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
     }
@@ -123,7 +127,7 @@ pub fn main() !void {
 
         // try renderer.setColorRGB(0xF7, 0xA4, 0x1D);
         // if (sdl.SDL_SetRenderDrawColor(renderer, 0xF7, 0xA4, 0x1D, 255) < 0) {}
-        if (sdl.SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0x00) < 0) {}
+        if (sdl.SDL_SetRenderDrawColor(renderer, 0x20, 0x10, 0x10, 0xFF) < 0) {}
 
         // try renderer.clear();
         if (sdl.SDL_RenderClear(renderer) > 0) {}

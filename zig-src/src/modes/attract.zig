@@ -165,7 +165,7 @@ pub const AttractMode = struct {
         const display_mode = MainModule.mode;
         // _ = display_mode;
 
-        var rect = sdl.SDL_Rect{ .x = @as(c_int, @intFromFloat(event.tfinger.x * 100.0)), .y = @as(c_int, @intFromFloat(event.tfinger.y * 100.0)), .w = 2, .h = 2 };
+        var rect = sdl.SDL_Rect{ .x = @as(c_int, @intFromFloat(event.tfinger.x * 100.0)), .y = @as(c_int, @intFromFloat(event.tfinger.y * 100.0)), .w = 10, .h = 10 };
         // sdl.SDL_Log("\nfinger up x: %f finger up y: %f.\n", event.tfinger.x * 100, event.tfinger.y * 100);
         // sdl.SDL_Log("\nfinger up x: %d finger up y: %d.\n", @as(c_int, @intFromFloat(event.tfinger.x * 100)), @as(c_int, @intFromFloat(event.tfinger.y * 100)));
         // sdl.SDL_Log("\n1. touch event at :%d %d.\n", rect.x, rect.y);
@@ -200,6 +200,11 @@ pub const AttractMode = struct {
         rect.x = @as(c_int, @divFloor(display_mode.w * rect.x, 100));
         rect.y = @as(c_int, @divFloor(display_mode.h * rect.y, 100));
 
+        rect.x -= 5;
+        rect.y -= 5;
+        rect.y += 50; // safe area
+
+        debug_rect_ = rect;
         // const rect = sdl.SDL_Rect{ .x = @as(c_int, @intFromFloat(event.tfinger.x * 100.0)), .y = @as(c_int, @intFromFloat(event.tfinger.y * 100.0)), .w = 2, .h = 2 };
         var result_rect = sdl.SDL_Rect{ .x = 0, .y = 7, .w = 0, .h = 0 };
         for (self.menu_items.items) |*item| {
@@ -313,7 +318,7 @@ pub const Color = extern struct {
 };
 
 fn create_menu_items(menu_items: *std.ArrayList(MenuItem), font: ?*sdl.TTF_Font, renderer: *sdl.SDL_Renderer) void {
-    var menu_item1 = MenuItem.init(sdl.SDL_Rect{ .x = 330, .y = 77, .w = 0, .h = 0 });
+    var menu_item1 = MenuItem.init(sdl.SDL_Rect{ .x = 330, .y = 60, .w = 0, .h = 0 });
     menu_item1.set_text(font, renderer, "Press [ENTER] to start.");
     menu_item1.set_on_click(
         struct {
@@ -326,7 +331,7 @@ fn create_menu_items(menu_items: *std.ArrayList(MenuItem), font: ?*sdl.TTF_Font,
     );
     menu_items.append(menu_item1) catch {};
 
-    var menu_item2 = MenuItem.init(sdl.SDL_Rect{ .x = 330, .y = 110, .w = 0, .h = 0 });
+    var menu_item2 = MenuItem.init(sdl.SDL_Rect{ .x = 330, .y = 100, .w = 0, .h = 0 });
     menu_item2.set_text(font, renderer, "[N] Next Song");
     menu_item2.set_on_click(
         struct {
@@ -340,7 +345,7 @@ fn create_menu_items(menu_items: *std.ArrayList(MenuItem), font: ?*sdl.TTF_Font,
     );
     menu_items.append(menu_item2) catch {};
 
-    var menu_item3 = MenuItem.init(sdl.SDL_Rect{ .x = 330, .y = 140, .w = 0, .h = 0 });
+    var menu_item3 = MenuItem.init(sdl.SDL_Rect{ .x = 330, .y = 130, .w = 0, .h = 0 });
     menu_item3.set_text(font, renderer, "[H] for Help");
     menu_item3.set_on_click(
         struct {
