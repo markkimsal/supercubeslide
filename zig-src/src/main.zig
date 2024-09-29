@@ -13,9 +13,10 @@ const GameModes = @import("modes/game_modes.zig");
 const GameModeType = @import("modes/game_modes.zig").GameModeType;
 const SpriteMod = @import("sprite.zig");
 
-const ANDROID = false;
+const ANDROID = true;
 
 const heap_alloc = std.heap.c_allocator;
+pub var mode: *sdl.SDL_DisplayMode = undefined;
 
 var current_song_index: usize = 0;
 pub fn main() !void {
@@ -24,39 +25,37 @@ pub fn main() !void {
     }
     defer sdl.SDL_Quit();
 
-    if (ANDROID) {
+    if (!ANDROID) {
         _ = sdl.SDL_SetHint(sdl.SDL_HINT_MOUSE_TOUCH_EVENTS, "1");
         _ = sdl.SDL_SetHint(sdl.SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+        _ = sdl.SDL_SetHint(sdl.SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
+    } else {
+        _ = sdl.SDL_SetHint(sdl.SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
+        _ = sdl.SDL_SetHint(sdl.SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+        _ = sdl.SDL_SetHint(sdl.SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
     }
 
-    var mode = heap_alloc.create(sdl.SDL_DisplayMode) catch sdlPanic();
+    mode = heap_alloc.create(sdl.SDL_DisplayMode) catch sdlPanic();
     _ = sdl.SDL_GetDisplayMode(0, 0, mode);
     defer sdl.SDL_free(mode);
 
-    var  window_flags: c_uint = sdl.SDL_WINDOW_SHOWN | sdl.SDL_WINDOW_RESIZABLE;
+    var window_flags: c_uint = sdl.SDL_WINDOW_SHOWN | sdl.SDL_WINDOW_RESIZABLE;
     if (ANDROID) {
         window_flags = sdl.SDL_WINDOW_FULLSCREEN | sdl.SDL_WINDOW_BORDERLESS;
     } else {
         // windowed mode, ovverride mode w/h
-        mode.w = 640;
-        mode.h = 680;
+        mode.w = 600;
+        mode.h = 800;
     }
-    const window = sdl.SDL_CreateWindow(
-        "Super Cube Slide",
-        sdl.SDL_WINDOWPOS_CENTERED,
-        sdl.SDL_WINDOWPOS_CENTERED,
-        mode.w,
-        mode.h,
-        window_flags
-    ) orelse sdlPanic();
+    const window = sdl.SDL_CreateWindow("Super Cube Slide", sdl.SDL_WINDOWPOS_CENTERED, sdl.SDL_WINDOWPOS_CENTERED, mode.w, mode.h, window_flags) orelse sdlPanic();
     defer sdl.SDL_DestroyWindow(window);
 
     bgm.start_song(current_song_index);
     defer bgm.close();
 
     var renderer_flags: c_uint = sdl.SDL_RENDERER_ACCELERATED;
-    if (ANDROID)  {
-        renderer_flags |=  sdl.SDL_RENDERER_PRESENTVSYNC;
+    if (ANDROID) {
+        renderer_flags |= sdl.SDL_RENDERER_PRESENTVSYNC;
     }
     var renderer = sdl.SDL_CreateRenderer(window, -1, renderer_flags) orelse sdlPanic();
 
@@ -65,7 +64,7 @@ pub fn main() !void {
         return err;
     };
 
-    var game_mode: GameModes.GameMode = GameModes.GameMode{ .attract = try AttractMode.AttractMode.init(renderer) };
+    var game_mode: GameModes.GameMode = GameModes.GameMode{ .attract = try AttractMode.AttractMode.init(heap_alloc, renderer) };
     // var game_mode: GameModes.GameMode = GameModes.GameMode{ .timed_play = try TimedPlayMode.init(renderer) };
 
     var poll_event: sdl.SDL_Event = undefined;
@@ -88,7 +87,10 @@ pub fn main() !void {
                     const consumed = game_mode.on_key(&poll_event.key);
                     break :sw_blk consumed;
                 },
-                sdl.SDL_MOUSEBUTTONUP, sdl.SDL_MOUSEBUTTONDOWN, sdl.SDL_MOUSEWHEEL, => sw_blk: {
+                sdl.SDL_MOUSEBUTTONUP,
+                sdl.SDL_MOUSEBUTTONDOWN,
+                sdl.SDL_MOUSEWHEEL,
+                => sw_blk: {
                     const consumed = game_mode.on_input(&poll_event);
                     break :sw_blk consumed;
                 },
@@ -111,7 +113,7 @@ pub fn main() !void {
         if (next_mode) |mode_type| {
             std.log.info("switching to new game mode: {?}", .{@intFromEnum(mode_type)});
             const new_mode = switch (mode_type) {
-                GameModeType.Attract => GameModes.GameMode{ .attract = try AttractMode.AttractMode.init(renderer) },
+                GameModeType.Attract => GameModes.GameMode{ .attract = try AttractMode.AttractMode.init(heap_alloc, renderer) },
                 GameModeType.TimedPlay => GameModes.GameMode{ .timed_play = try TimedPlayMode.init(renderer) },
                 // GameModeType.TimedPlay => try AttractMode.AttractMode.init(&renderer),
             };
@@ -125,7 +127,7 @@ pub fn main() !void {
 
         // try renderer.setColorRGB(0xF7, 0xA4, 0x1D);
         // if (sdl.SDL_SetRenderDrawColor(renderer, 0xF7, 0xA4, 0x1D, 255) < 0) {}
-        if (sdl.SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0x00) < 0) {}
+        if (sdl.SDL_SetRenderDrawColor(renderer, 0x20, 0x10, 0x10, 0xFF) < 0) {}
 
         // try renderer.clear();
         if (sdl.SDL_RenderClear(renderer) > 0) {}
