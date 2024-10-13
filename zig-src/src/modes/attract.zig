@@ -202,7 +202,6 @@ pub const AttractMode = struct {
 
         rect.x -= 5;
         rect.y -= 5;
-        rect.y += 50; // safe area
 
         debug_rect_ = rect;
         // const rect = sdl.SDL_Rect{ .x = @as(c_int, @intFromFloat(event.tfinger.x * 100.0)), .y = @as(c_int, @intFromFloat(event.tfinger.y * 100.0)), .w = 2, .h = 2 };
