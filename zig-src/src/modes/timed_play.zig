@@ -40,10 +40,11 @@ pub const TimedPlayMode = struct {
         const cube_texture = SpriteModule.loadTextureMem(renderer, cube_a[0..], SpriteModule.ImgFormat.png) catch |err| {
             return err;
         };
-        var sprite = Sprite.init(BlockTextureTags.A, 24, 24);
-        sprite.setPosition(-1, 0);
 
         var play_field = PlayField.init(heap_alloc, 5, 5).?;
+
+        var sprite = Sprite.init(BlockTextureTags.A, play_field.x_size, play_field.y_size);
+        sprite.setPosition(-1, 0);
         play_field.addActor(&sprite) catch {
             std.log.err("Cannot add sprite to play field", .{});
         };
@@ -111,7 +112,21 @@ pub const TimedPlayMode = struct {
         }
 
 
+        const play_field_rect = sdl.SDL_Rect{
+            .w = @as(c_int, @intCast(self.play_field.max_width)) * self.play_field.x_size,
+            .h = @as(c_int, @intCast(self.play_field.max_height)) * self.play_field.y_size,
+            .x = 128,
+            .y = 88
+        };
+        _ = play_field_rect;
+
+        // _ = sdl.SDL_SetRenderTarget(renderer, base_tex);
+        // _ = sdl.SDL_SetRenderDrawColor(renderer, 0xC0, 0xAA, 0xAA, 0xFF);
+        // _ = sdl.SDL_RenderDrawRect(renderer, &play_field_rect);
+        // _ = sdl.SDL_SetRenderTarget(renderer, null);
+
         _ = sdl.SDL_RenderCopy(renderer, base_tex, null, &dst);
+
         sdl.SDL_DestroyTexture(base_tex);
     }
 
@@ -157,8 +172,10 @@ pub const TimedPlayMode = struct {
     }
 
     pub fn paintBand(self: TimedPlayMode, renderer: *sdl.SDL_Renderer) void {
-        // renderer.drawRect(sdl.SDL_Rect{ .width = @as(c_int, @intCast(self.play_field.band_width)) * 24, .height = @as(c_int, @intCast(self.play_field.band_height)) * 24, .x = self.play_field_offset_x, .y = self.play_field_offset_y }) catch {};
-        const rect = sdl.SDL_Rect{ .w = @as(c_int, @intCast(self.play_field.band_width)) * 24, .h = @as(c_int, @intCast(self.play_field.band_height)) * 24, .x = self.play_field_offset_x, .y = self.play_field_offset_y };
+        const cube_size = self.play_field.x_size;
+        _ = sdl.SDL_SetRenderDrawColor(renderer, 0xC0, 0xAA, 0xAA, 0xFF);
+        // renderer.drawRect(sdl.SDL_Rect{ .width = @as(c_int, @intCast(self.play_field.band_width)) * cube_size, .height = @as(c_int, @intCast(self.play_field.band_height)) * cube_size, .x = self.play_field_offset_x, .y = self.play_field_offset_y }) catch {};
+        const rect = sdl.SDL_Rect{ .w = @as(c_int, @intCast(self.play_field.band_width)) * cube_size, .h = @as(c_int, @intCast(self.play_field.band_height)) * cube_size, .x = self.play_field_offset_x, .y = self.play_field_offset_y };
         _ = sdl.SDL_RenderDrawRect(renderer, &rect);
     }
 
@@ -280,8 +297,9 @@ pub const TimedPlayMode = struct {
 
     // graphical area is around 600 x 600
     fn recenterPlayField(self: *TimedPlayMode) void {
-        self.play_field_offset_x = (272 - @divFloor(@as(c_int, @intCast(self.play_field.band_width)) * 24, 2));
-        self.play_field_offset_y = (232 - @divFloor(@as(c_int, @intCast(self.play_field.band_height)) * 24, 2));
+        const cube_size = self.play_field.x_size;
+        self.play_field_offset_x = (272 - @divFloor(@as(c_int, @intCast(self.play_field.band_width)) * cube_size, 2));
+        self.play_field_offset_y = (232 - @divFloor(@as(c_int, @intCast(self.play_field.band_height)) * cube_size, 2));
     }
 
     pub fn update(self: *TimedPlayMode) ?GameModes.GameModeType {
@@ -452,9 +470,10 @@ pub const TimedPlayMode = struct {
 
     fn nextLevel(self: *TimedPlayMode) void {
         self.level_number = self.level_number + 1;
-        const band_w: u8 = 4 + @as(u8, @intCast(@divTrunc(self.level_number, 10)));
-        self.play_field.populateField(self.level_number, band_w, band_w);
+        const band_w: u8 = 4 + @as(u8, @intCast(@divTrunc(self.level_number, 1)));
+        self.play_field.populateField(self.level_number, @min(self.play_field.max_width, band_w), @min(self.play_field.max_height, band_w));
 
+        self.recenterPlayField();
         for (self.play_field.actors.items) |*actor| {
             actor.setPosition(-1, -1);
         }

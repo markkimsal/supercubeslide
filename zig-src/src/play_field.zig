@@ -15,10 +15,10 @@ var field: FieldContainer = undefined;
 var rand = std.rand.Xoroshiro128.init(1234);
 
 pub const PlayField = struct {
-    max_width: u8 = 18,
-    max_height: u8 = 18,
-    x_size: u8 = 24,
-    y_size: u8 = 24,
+    max_width: u8 = 8,
+    max_height: u8 = 8,
+    x_size: u8 = 36,
+    y_size: u8 = 36,
     band_width: u8,
     band_height: u8,
     actors: std.ArrayList(Sprite),
@@ -54,13 +54,13 @@ pub const PlayField = struct {
                     }
                     const tag_random = rand.next();
                     if (tag_random % 4 == 0) {
-                        self.field[y][x] = genSprite(BlockTextureTags.A, 24, 24).?;
+                        self.field[y][x] = genSprite(BlockTextureTags.A, self.x_size, self.y_size).?;
                     } else if (tag_random % 3 == 0) {
-                        self.field[y][x] = genSprite(BlockTextureTags.C, 24, 24).?;
+                        self.field[y][x] = genSprite(BlockTextureTags.C, self.x_size, self.y_size).?;
                     } else if (tag_random % 2 == 0) {
-                        self.field[y][x] = genSprite(BlockTextureTags.D, 24, 24).?;
+                        self.field[y][x] = genSprite(BlockTextureTags.D, self.x_size, self.y_size).?;
                     } else {
-                        self.field[y][x] = genSprite(BlockTextureTags.B, 24, 24).?;
+                        self.field[y][x] = genSprite(BlockTextureTags.B, self.x_size, self.y_size).?;
                     }
                     self.field[y][x].setPosition(xx, yy);
                 }

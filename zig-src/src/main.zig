@@ -13,7 +13,7 @@ const GameModes = @import("modes/game_modes.zig");
 const GameModeType = @import("modes/game_modes.zig").GameModeType;
 const SpriteMod = @import("sprite.zig");
 
-const ANDROID = true;
+const ANDROID = false;
 
 const heap_alloc = std.heap.c_allocator;
 pub var mode: *sdl.SDL_DisplayMode = undefined;
@@ -25,7 +25,7 @@ pub fn main() !void {
     }
     defer sdl.SDL_Quit();
 
-    if (!ANDROID) {
+    if (ANDROID) {
         _ = sdl.SDL_SetHint(sdl.SDL_HINT_MOUSE_TOUCH_EVENTS, "1");
         _ = sdl.SDL_SetHint(sdl.SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
         _ = sdl.SDL_SetHint(sdl.SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
@@ -48,10 +48,14 @@ pub fn main() !void {
         mode.h = 800;
     }
     const window = sdl.SDL_CreateWindow("Super Cube Slide", sdl.SDL_WINDOWPOS_CENTERED, sdl.SDL_WINDOWPOS_CENTERED, mode.w, mode.h, window_flags) orelse sdlPanic();
+    // second monitory
+    if (!ANDROID) {
+        sdl.SDL_SetWindowPosition(window, 1680, 100);
+    }
     defer sdl.SDL_DestroyWindow(window);
 
-    bgm.start_song(current_song_index);
-    defer bgm.close();
+    // bgm.start_song(current_song_index);
+    // defer bgm.close();
 
     var renderer_flags: c_uint = sdl.SDL_RENDERER_ACCELERATED;
     if (ANDROID) {
@@ -66,6 +70,9 @@ pub fn main() !void {
 
     var game_mode: GameModes.GameMode = GameModes.GameMode{ .attract = try AttractMode.AttractMode.init(heap_alloc, renderer) };
     // var game_mode: GameModes.GameMode = GameModes.GameMode{ .timed_play = try TimedPlayMode.init(renderer) };
+    // const safe_area = sdl.SDL_Rect;
+    // sdl.SDL_GetWindowSafeArea(&safe_area);
+
 
     var poll_event: sdl.SDL_Event = undefined;
     mainLoop: while (true) {
