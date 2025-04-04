@@ -1,3 +1,0 @@
-[submodule "zig-src/mods/sdl-zig"]
-	path = zig-src/mods/sdl-zig
-	url = https://github.com/MasterQ32/SDL.zig.git
