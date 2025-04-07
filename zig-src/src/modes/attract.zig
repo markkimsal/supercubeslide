@@ -6,6 +6,7 @@ const GameModes = @import("game_modes.zig");
 const SpriteModule = @import("../sprite.zig");
 const bgm = @import("../bgm.zig");
 const MenuItem = @import("../ui/menu_item.zig").MenuItem;
+const app_state = @import("../sokol.zig").app_state;
 
 var debug_rect_: ?sdl.SDL_Rect = undefined;
 
@@ -41,6 +42,11 @@ pub const AttractMode = struct {
             .font = font.?,
             .menu_items = menu_items,
         };
+    }
+
+    pub fn render(self: @This(), state: anytype) void {
+        _ = self;
+        _ = state;
     }
 
     pub fn paint(self: *AttractMode, renderer: *sdl.SDL_Renderer, mode: *sdl.SDL_DisplayMode) void {
@@ -109,7 +115,7 @@ pub const AttractMode = struct {
             return;
         }
 
-        for (self.menu_items.items) | *item | {
+        for (self.menu_items.items) |*item| {
             item.paint(renderer);
         }
     }
@@ -220,7 +226,7 @@ pub const AttractMode = struct {
             _ = collide;
             if (sdl.SDL_IntersectRect(&rect, &menu_item_rect, &result_rect) == sdl.SDL_TRUE) {
                 _ = item.on_click.?(
-                    event, 
+                    event,
                     self,
                 );
                 std.log.debug("Intersected with menu item {}", .{result_rect});
@@ -321,12 +327,12 @@ fn create_menu_items(menu_items: *std.ArrayList(MenuItem), font: ?*sdl.TTF_Font,
     menu_item1.set_text(font, renderer, "Press [ENTER] to start.");
     menu_item1.set_on_click(
         struct {
-                fn handle(event: *sdl.SDL_Event, game_mode: *AttractMode) bool {
-                    _ = event;
-                    game_mode.next_mode = GameModes.GameModeType.TimedPlay;
-                    return true;
-                }
-            }.handle,
+            fn handle(event: *sdl.SDL_Event, game_mode: *AttractMode) bool {
+                _ = event;
+                game_mode.next_mode = GameModes.GameModeType.TimedPlay;
+                return true;
+            }
+        }.handle,
     );
     menu_items.append(menu_item1) catch {};
 
@@ -334,13 +340,13 @@ fn create_menu_items(menu_items: *std.ArrayList(MenuItem), font: ?*sdl.TTF_Font,
     menu_item2.set_text(font, renderer, "[N] Next Song");
     menu_item2.set_on_click(
         struct {
-                fn handle(event: *sdl.SDL_Event, game_mode: *AttractMode) bool {
-                    bgm.start_song(bgm.song_index_ + 1);
-                    _ = event;
-                    _ = game_mode;
-                    return true;
-                }
-            }.handle,
+            fn handle(event: *sdl.SDL_Event, game_mode: *AttractMode) bool {
+                bgm.start_song(bgm.song_index_ + 1);
+                _ = event;
+                _ = game_mode;
+                return true;
+            }
+        }.handle,
     );
     menu_items.append(menu_item2) catch {};
 
@@ -348,12 +354,12 @@ fn create_menu_items(menu_items: *std.ArrayList(MenuItem), font: ?*sdl.TTF_Font,
     menu_item3.set_text(font, renderer, "[H] for Help");
     menu_item3.set_on_click(
         struct {
-                fn handle(event: *sdl.SDL_Event, game_mode: *AttractMode) bool {
-                    _ = event;
-                    _ = game_mode;
-                    return true;
-                }
-            }.handle,
+            fn handle(event: *sdl.SDL_Event, game_mode: *AttractMode) bool {
+                _ = event;
+                _ = game_mode;
+                return true;
+            }
+        }.handle,
     );
     menu_items.append(menu_item3) catch {};
 
@@ -361,13 +367,13 @@ fn create_menu_items(menu_items: *std.ArrayList(MenuItem), font: ?*sdl.TTF_Font,
     menu_item4.set_text(font, renderer, "[M] Mute Music");
     menu_item4.set_on_click(
         struct {
-                fn handle(event: *sdl.SDL_Event, game_mode: *AttractMode) bool {
-                    bgm.pause_music();
-                    _ = event;
-                    _ = game_mode;
-                    return true;
-                }
-            }.handle,
+            fn handle(event: *sdl.SDL_Event, game_mode: *AttractMode) bool {
+                bgm.pause_music();
+                _ = event;
+                _ = game_mode;
+                return true;
+            }
+        }.handle,
     );
     menu_items.append(menu_item4) catch {};
 }

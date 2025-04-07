@@ -1,4 +1,7 @@
 const std = @import("std");
+const sokol = @import("sokol");
+const sg = sokol.gfx;
+const shader = @import("../shaders/playfield.glsl.zig");
 // const sdl = @import("sdl2");
 const MainModule = @import("../main.zig");
 const sdl = MainModule.sdl;
@@ -12,6 +15,7 @@ const Animation = @import("../animation.zig").Animation;
 const TaggedAnimation = @import("../animation.zig").TaggedAnimation;
 const AnimationType = @import("../animation.zig").AnimationType;
 const app_state = @import("../sokol.zig").app_state;
+const zigimg = @import("zigimg");
 
 const heap_alloc = std.heap.c_allocator;
 pub const TimedPlayMode = struct {
@@ -32,15 +36,33 @@ pub const TimedPlayMode = struct {
     level_number: u16 = 0,
     score: i16 = 0,
 
-    pub fn init(renderer: *sdl.SDL_Renderer) !TimedPlayMode {
-        const img = @embedFile("background.png");
-        const texture = SpriteModule.loadTextureMem(renderer, img[0..], SpriteModule.ImgFormat.png) catch |err| {
-            return err;
-        };
+    pub fn init(state: *app_state) !TimedPlayMode {
+        // const img = @embedFile("background.png");
+        // _ = img;
+        _ = state;
+        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+        defer _ = gpa.deinit();
+
+        const allocator = gpa.allocator();
+
         var cube_a = @embedFile("cube_a.png");
-        const cube_texture = SpriteModule.loadTextureMem(renderer, cube_a[0..], SpriteModule.ImgFormat.png) catch |err| {
-            return err;
+        var image = try zigimg.Image.fromMemory(allocator, cube_a[0..]);
+        var img_desc: sg.ImageDesc = .{
+            .width = 24,
+            .height = 24,
         };
+        img_desc.data.subimage[0][0] = sg.asRange(image.rawBytes());
+        app_state.bind.images[shader.IMG_tex] = sg.makeImage(img_desc);
+
+        defer image.deinit();
+
+        // const texture = SpriteModule.loadTextureMem(renderer, img[0..], SpriteModule.ImgFormat.png) catch |err| {
+        //     return err;
+        // };
+        // var cube_a = @embedFile("cube_a.png");
+        // const cube_texture = SpriteModule.loadTextureMem(renderer, cube_a[0..], SpriteModule.ImgFormat.png) catch |err| {
+        //     return err;
+        // };
 
         var play_field = PlayField.init(heap_alloc, 5, 5).?;
 
@@ -51,8 +73,8 @@ pub const TimedPlayMode = struct {
         };
         play_field.populateField(0, 4, 4);
         var play_mode = TimedPlayMode{
-            .background_image = texture,
-            .cube_a = cube_texture,
+            .background_image = undefined,
+            .cube_a = undefined,
             .next_mode = null,
             .play_field = play_field,
             .animation = null,
@@ -68,8 +90,9 @@ pub const TimedPlayMode = struct {
     }
 
     pub fn render(self: @This(), state: anytype) void {
-        _ = self;
         _ = state;
+        const vs_params = computeVsParams(app_state.dt, &self.play_field);
+        sg.applyUniforms(shader.UB_DataBlock, sg.asRange(&vs_params));
     }
 
     pub fn paint(self: *TimedPlayMode, renderer: *sdl.SDL_Renderer, mode: *sdl.SDL_DisplayMode) void {
@@ -303,6 +326,10 @@ pub const TimedPlayMode = struct {
     }
 
     pub fn update(self: *TimedPlayMode) ?GameModes.GameModeType {
+        for (self.play_field.actors.items) |*actor| {
+            self.moveCounterClockwise(actor);
+        }
+
         if (self.next_mode) |mode| {
             return mode;
         }
@@ -482,3 +509,63 @@ pub const TimedPlayMode = struct {
         self.resetMoveCounter();
     }
 };
+
+fn computeVsParams(time: f64, play_field: *const PlayField) [400]f32 {
+    _ = time;
+    var pos: [100 * 4]f32 = undefined;
+    // std.mem.zeroes(&pos);
+    @memset(&pos, 0);
+
+    for (0..play_field.band_height) |y| {
+        for (0..play_field.band_width) |x| {
+            const actor = play_field.field[y][x].*;
+            var rect = actor.rect;
+            pos[x * 2 + (y * 8)] = -0.30 + (@as(f32, @floatFromInt(x)) * 0.20);
+            pos[x * 2 + (y * 8) + 1] = 0.30 - (@as(f32, @floatFromInt(y)) * 0.20);
+
+            // pos[x * 2 + (y * 8)] = -0.9;
+            // pos[x * 2 + (y * 8) + 1] = 0.9;
+
+            // std.debug.print("{any} {any}\n", .{ x, y });
+            // std.debug.print("{any} {any}\n", .{ pos[0], pos[1] });
+
+            rect.x *= play_field.x_size; // translate coords into pixels
+            rect.y *= play_field.y_size; // translate coords into pixels
+
+            if (actor.desaturate != 0.0) {
+                // const alpha_blend = actor.desaturate * 255;
+                // const alpha_blend_2 = @as(u8, 255 - @as(u8, @intFromFloat(alpha_blend)));
+                // _ = sdl.SDL_SetTextureAlphaMod(actor.getTexture(), alpha_blend_2);
+                // _ = sdl.SDL_RenderCopy(renderer, actor.getTexture(), null, &rect);
+                // _ = sdl.SDL_SetTextureAlphaMod(actor.getTexture(), 255);
+            } else {
+                // if (sdl.SDL_RenderCopy(renderer, actor.getTexture(), null, &rect) < 0) {
+                //     std.log.err("error copying field cube to renderer", .{});
+                // }
+            }
+        }
+    }
+
+    for (play_field.actors.items) |*actor| {
+        const rect = actor.rect;
+        pos[32] = -0.30 + (@as(f32, @floatFromInt(rect.x)) * 0.20);
+        pos[33] = 0.30 - (@as(f32, @floatFromInt(rect.y)) * 0.20);
+    }
+    // const timesine: f32 = @floatCast(std.math.sin(1.0 - @as(f32, @floatFromInt(time))));
+    // var timesine: f32 = @floatCast(std.math.sin(1.0 - time));
+    // timesine = 1.0 - @abs(timesine * timesine * timesine * timesine);
+    // std.mem.copyForwards(f32, &pos, &[4 * 10]f32{
+    //     -0.9 * timesine, 0.0,  -0.7 * timesine, 0.0,
+    //     -0.5,            -0.5, -0.3,            -0.3,
+    //     -0.1,            -0.1, 0.1,             0.1,
+    //     0.3,             0.3,  0.5,             0.5,
+    //     0.7 * timesine,  0.0,  0.9 * timesine,  0.0,
+    //     0.0,             0.0,  0.0,             0.0,
+    //     0.0,             0.0,  0.0,             0.0,
+    //     0.0,             0.0,  0.0,             0.0,
+    //     0.0,             0.0,  0.0,             0.0,
+    //     0.0,             0.0,  0.0,             0.0,
+    // });
+    return pos;
+    // return .{ .pos = pos };
+}

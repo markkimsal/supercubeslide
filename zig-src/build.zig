@@ -1,10 +1,13 @@
 const std = @import("std");
+const Build = std.Build;
+// const zig_sokol_build = @import("zig_sokol_crossplatform_starter");
+const zig_sokol_build = @import("./vendor/zig-sokol-crossplatform-starter/build.zig");
 // const Sdk = @import("mods/sdl-zig/Sdk.zig"); // Import the Sdk at build time
 
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
 // runner.
-pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
+pub fn build(b: *std.Build) !void {
     // Standard target options allows the person running `zig build` to choose
     // what target to build for. Here we do not override the defaults, which
     // means any target is allowed, and the default is native. Other options
@@ -16,6 +19,21 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
+    // const zig_sokol_build = try buildSokolMod(b, target, optimize);
+
+    const default_sokol_res = try zig_sokol_build.buildSokolLib(b, target, optimize);
+    var exe = try zig_sokol_build.buildExe(b, target, optimize, default_sokol_res.module);
+    const install_default_exe = b.addInstallArtifact(exe, .{});
+
+    const install_default = b.step("default", "Build binaries for the current system (or specified in command)");
+    install_default.dependOn(&install_default_exe.step);
+
+    const zigimg_dependency = b.dependency("zigimg", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
+    exe.root_module.addImport("zigimg", zigimg_dependency.module("zigimg"));
     // Create a new instance of the SDL2 Sdk
     // const sdk = Sdk.init(b, null);
 
@@ -23,13 +41,13 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
     const prebuilt_sdl_folder = b.option([]const u8, "prebuilt-sdl", "Absolute path to cross-compiled SDL2 family of libraries");
     const macos_sysroot_path = b.option([]const u8, "sysroot-path", "Absolute path to cross-compiled SDL2 family of libraries");
 
-    var exe: *std.Build.Step.Compile = undefined;
-    exe = b.addExecutable(.{
-        .name = "supercubeslide",
-        .root_source_file = .{ .cwd_relative = "src/main.zig" },
-        .target = target,
-        .optimize = optimize,
-    });
+    // exe: *std.Build.Step.Compile = undefined;
+    // exe = b.addExecutable(.{
+    //     .name = "supercubeslide",
+    //     .root_source_file = .{ .cwd_relative = "src/main.zig" },
+    //     .target = target,
+    //     .optimize = optimize,
+    // });
 
     if (target.result.os.tag == .windows) {
         const lib_path = prebuilt_sdl_folder orelse "./prebuilt/x86_64-windows-gnu";
@@ -207,6 +225,50 @@ pub fn build(b: *std.Build) error{ OutOfMemory, NoSpaceLeft }!void {
     // running the unit tests.
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_unit_tests.step);
+}
+
+const BuildSokolResult = struct {
+    module: *Build.Module,
+    installed_library: *Build.Step.InstallArtifact,
+};
+fn buildSokolMod(
+    b: *Build,
+    target: Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+) !*std.Build.Module {
+    // const triple = try target.result.zigTriple(b.allocator);
+    // const name = b.fmt("libsokol_{s}", .{triple});
+
+    var dep_sokol_build = b.dependency("zig_sokol_crossplatform_starter", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    // dep_sokol_build.builder.verbose = true;
+    const sokol_build_mod = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        // .root_source_file = dep_sokol_build.path("build.zig")
+        .root_source_file = .{ .cwd_relative = "vendor/zig-sokol-crossplatform-starter/build.zig" },
+    });
+    // sokol_build_mod.build(b);
+    const path = dep_sokol_build.path("build.zig");
+    std.debug.print("foo: {}", .{dep_sokol_build.path("build.zig")});
+    std.debug.print("foo: {s}", .{path.getPath(b)});
+    // _ = sokol_build_mod;
+    // sokol_build_mod.build(b);
+    return sokol_build_mod;
+    // const sokol_module = dep_sokol.module("sokol");
+    // if (sokol_module.link_objects.items.len > 1) {
+    //     return BuildSokolError.FoundMoreThanOneLib;
+    // }
+    // const sokol_lib = sokol_module.link_objects.getLast().other_step;
+    // try addCompilePaths(b, target, sokol_lib);
+    // const installed_lib = b.addInstallArtifact(sokol_lib, .{ .dest_sub_path = name });
+
+    // return .{
+    //     .module = sokol_module,
+    //     .installed_library = installed_lib,
+    // };
 }
 
 fn installStaticResources(exe: *std.Build.Step.Compile) void {
