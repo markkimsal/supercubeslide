@@ -98,7 +98,7 @@ pub fn main() !void {
                 sdl.SDL_MOUSEBUTTONDOWN,
                 sdl.SDL_MOUSEWHEEL,
                 => sw_blk: {
-                    const consumed = game_mode.on_input(&poll_event);
+                    const consumed = game_mode.on_sdl_input(&poll_event);
                     break :sw_blk consumed;
                 },
                 sdl.SDL_FINGERUP, sdl.SDL_FINGERMOTION, sdl.SDL_FINGERDOWN => sw_blk2: {
@@ -122,6 +122,7 @@ pub fn main() !void {
             const new_mode = switch (mode_type) {
                 GameModeType.Attract => GameModes.GameMode{ .attract = try AttractMode.AttractMode.init(heap_alloc, renderer) },
                 GameModeType.TimedPlay => GameModes.GameMode{ .timed_play = try TimedPlayMode.init(renderer) },
+                GameModeType.TimedPlaySokol => unreachable,
                 // GameModeType.TimedPlay => try AttractMode.AttractMode.init(&renderer),
             };
             // new_mode = GameModes.GameMode{.attract = new_mode}

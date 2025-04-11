@@ -1,4 +1,5 @@
 const std = @import("std");
+const sokol = @import("sokol");
 // const sdl = @import("sdl2");
 const MainModule = @import("../main.zig");
 const sdl = MainModule.sdl;
@@ -142,7 +143,13 @@ pub const AttractMode = struct {
         };
     }
 
-    pub fn on_input(self: AttractMode, event: *sdl.SDL_Event) bool {
+    pub fn on_sdl_input(self: *@This(), event: *sdl.SDL_Event) bool {
+        _ = self;
+        _ = event;
+        return true;
+    }
+
+    pub fn on_input(self: *@This(), event: [*c]const sokol.app.Event) bool {
         _ = self;
         _ = event;
         return true;

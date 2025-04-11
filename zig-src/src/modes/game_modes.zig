@@ -1,6 +1,7 @@
 // const sdl = @import("sdl2");
 const MainModule = @import("../main.zig");
 const sdl = MainModule.sdl;
+const sokol = @import("sokol");
 
 const Attract = @import("attract.zig").AttractMode;
 const TimedPlay = @import("timed_play.zig").TimedPlayMode;
@@ -48,9 +49,16 @@ pub const GameMode = union(enum) {
             inline else => |*case| return case.on_key(key_event),
         }
     }
-    pub fn on_input(self: *Self, event: *sdl.SDL_Event) bool {
+
+    pub fn on_input(self: *Self, event: [*c]const sokol.app.Event) bool {
         switch (self.*) {
             inline else => |*case| return case.on_input(event),
+        }
+    }
+
+    pub fn on_sdl_input(self: *Self, event: *sdl.SDL_Event) bool {
+        switch (self.*) {
+            inline else => |*case| return case.on_sdl_input(event),
         }
     }
 

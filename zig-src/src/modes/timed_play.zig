@@ -1,4 +1,5 @@
 const std = @import("std");
+const sokol = @import("sokol");
 // const sdl = @import("sdl2");
 const MainModule = @import("../main.zig");
 const sdl = MainModule.sdl;
@@ -186,31 +187,43 @@ pub const TimedPlayMode = struct {
         self.play_field.close();
     }
 
-    pub fn on_input(self: *TimedPlayMode, event: *sdl.SDL_Event) bool {
-        if (self.animation != null) {
-            return false;
-        }
-        switch (event.type) {
-            sdl.SDL_MOUSEWHEEL => {
-                for (self.play_field.actors.items) |*actor| {
-                    if (event.wheel.y > 0) {
-                        self.moveCounterClockwise(actor);
-                    } else {
-                        self.moveClockwise(actor);
-                    }
-                }
-            },
-            sdl.SDL_MOUSEBUTTONUP => {
-                if (event.button.button == sdl.SDL_BUTTON_MIDDLE or event.button.button == sdl.SDL_BUTTON_LEFT) {
-                    if (self.play_field.moveActor()) {
-                        self.recordMove();
-                    }
-                }
-            },
-            else => {},
-        }
+    pub fn on_sdl_input(self: *@This(), event: *sdl.SDL_Event) bool {
+        _ = self;
+        _ = event;
         return true;
     }
+
+    pub fn on_input(self: *@This(), event: [*c]const sokol.app.Event) bool {
+        _ = self;
+        _ = event;
+        return true;
+    }
+
+    // pub fn on_input_sokol(self: *@This(), event: [*c]const sokol.app.Event) bool {
+    //     if (self.animation != null) {
+    //         return false;
+    //     }
+    //     switch (event.*.type) {
+    //         sdl.SDL_MOUSEWHEEL => {
+    //             for (self.play_field.actors.items) |*actor| {
+    //                 if (event.wheel.y > 0) {
+    //                     self.moveCounterClockwise(actor);
+    //                 } else {
+    //                     self.moveClockwise(actor);
+    //                 }
+    //             }
+    //         },
+    //         sdl.SDL_MOUSEBUTTONUP => {
+    //             if (event.button.button == sdl.SDL_BUTTON_MIDDLE or event.button.button == sdl.SDL_BUTTON_LEFT) {
+    //                 if (self.play_field.moveActor()) {
+    //                     self.recordMove();
+    //                 }
+    //             }
+    //         },
+    //         else => {},
+    //     }
+    //     return true;
+    // }
 
     pub fn on_touch(self: *TimedPlayMode, event: *sdl.SDL_Event) bool {
         if (self.animation != null) {

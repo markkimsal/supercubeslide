@@ -223,18 +223,6 @@ export fn init() void {
     // framebuffer clear color
     app_state.pass_action.colors[0] = .{ .load_action = .CLEAR, .clear_value = .{ .r = 0.25, .g = 0.5, .b = 1.75, .a = 0.25 } };
 
-    // create a small checker-board texture
-    var img_desc: sg.ImageDesc = .{
-        .width = 4,
-        .height = 4,
-    };
-    img_desc.data.subimage[0][0] = sg.asRange(&[4 * 4]u32{
-        0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF, 0xFF000000,
-        0xFF000000, 0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF,
-        0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF, 0xFF000000,
-        0xFF000000, 0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF,
-    });
-    app_state.bind.images[shader.IMG_tex] = sg.makeImage(img_desc);
     app_state.bind.samplers[shader.SMP_smp] = sg.makeSampler(.{});
 
     app_state.bind.vertex_buffers[0] = sg.makeBuffer(.{
@@ -248,6 +236,7 @@ export fn init() void {
     });
     app_state.game_mode = GameModes.GameMode{ .timed_play_sokol = TimedPlayModeSokol.init(&game_state) catch unreachable };
 }
+
 export fn frame() void {
     const time: f64 = @floatCast(sapp.frameDuration());
     // const time: u64 = sapp.frameCount();
@@ -269,15 +258,16 @@ export fn cleanup() void {
 }
 
 export fn my_event_cb(event: [*c]const sevent) callconv(.C) void {
-    switch (event.*.type) {
-        sokol.app.EventType.MOUSE_DOWN => {
-            _ = app_state.game_mode.update();
-        },
-        sokol.app.EventType.TOUCHES_ENDED => {
-            _ = app_state.game_mode.update();
-        },
-        else => {},
-    }
+
+        _ = app_state.game_mode.on_input(event);
+    // switch (event.*.type) {
+    //     sokol.app.EventType.MOUSE_DOWN => {
+    //         _ = app_state.game_mode.ok_input();
+    //     },
+    //     sokol.app.EventType.TOUCHES_ENDED => {
+    //     },
+    //     else => {},
+    // }
 }
 pub export const app_descriptor: sapp.Desc = .{
     .init_cb = init,
