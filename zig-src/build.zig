@@ -48,6 +48,7 @@ pub fn build(b: *std.Build) !void {
     //     .target = target,
     //     .optimize = optimize,
     // });
+    // exe.root_module.addImport("sokol", default_sokol_res.module);
 
     if (target.result.os.tag == .windows) {
         const lib_path = prebuilt_sdl_folder orelse "./prebuilt/x86_64-windows-gnu";
