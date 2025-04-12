@@ -53,7 +53,7 @@ pub const TimedPlayMode = struct {
             .height = 24,
         };
         img_desc.data.subimage[0][0] = sg.asRange(image.rawBytes());
-        app_state.bind.images[shader.IMG_tex_a] = sg.makeImage(img_desc);
+        app_state.offscreen.bind.images[shader.IMG_tex_a] = sg.makeImage(img_desc);
 
         var cube_b = @embedFile("cube_b.png");
         var image_b = try zigimg.Image.fromMemory(allocator, cube_b[0..]);
@@ -62,7 +62,7 @@ pub const TimedPlayMode = struct {
             .height = 24,
         };
         img_desc_b.data.subimage[0][0] = sg.asRange(image_b.rawBytes());
-        app_state.bind.images[shader.IMG_tex_b] = sg.makeImage(img_desc_b);
+        app_state.offscreen.bind.images[shader.IMG_tex_b] = sg.makeImage(img_desc_b);
 
         var cube_c = @embedFile("cube_c.png");
         var image_c = try zigimg.Image.fromMemory(allocator, cube_c[0..]);
@@ -71,7 +71,7 @@ pub const TimedPlayMode = struct {
             .height = 24,
         };
         img_desc_c.data.subimage[0][0] = sg.asRange(image_c.rawBytes());
-        app_state.bind.images[shader.IMG_tex_c] = sg.makeImage(img_desc_c);
+        app_state.offscreen.bind.images[shader.IMG_tex_c] = sg.makeImage(img_desc_c);
 
         var cube_d = @embedFile("cube_d.png");
         var image_d = try zigimg.Image.fromMemory(allocator, cube_d[0..]);
@@ -80,15 +80,12 @@ pub const TimedPlayMode = struct {
             .height = 24,
         };
         img_desc_d.data.subimage[0][0] = sg.asRange(image_d.rawBytes());
-        app_state.bind.images[shader.IMG_tex_d] = sg.makeImage(img_desc_d);
-
+        app_state.offscreen.bind.images[shader.IMG_tex_d] = sg.makeImage(img_desc_d);
 
         defer image_d.deinit();
         defer image_c.deinit();
         defer image_b.deinit();
         defer image.deinit();
-
-
 
         // const texture = SpriteModule.loadTextureMem(renderer, img[0..], SpriteModule.ImgFormat.png) catch |err| {
         //     return err;
@@ -124,10 +121,14 @@ pub const TimedPlayMode = struct {
     }
 
     pub fn render(self: @This(), state: anytype) void {
-        _ = state;
+        // _ = state;
         const vs_params = computeVsParams(app_state.dt, &self.play_field);
+        sg.beginPass(.{ .action = state.offscreen.pass_action, .attachments = state.offscreen.attachments });
+        sg.applyPipeline(state.offscreen.pip);
+        sg.applyBindings(state.offscreen.bind);
         sg.applyUniforms(shader.UB_DataBlock, sg.asRange(&vs_params));
-        // sg.applyUniforms(shader.UB_DataBlock, sg.asRange(&vs_params.pos));
+        sg.draw(0, 4, 17);
+        sg.endPass();
     }
 
     pub fn paint(self: *TimedPlayMode, renderer: *sdl.SDL_Renderer, mode: *sdl.SDL_DisplayMode) void {
@@ -552,7 +553,7 @@ pub const TimedPlayMode = struct {
 };
 const VsParams = struct {
     pos: [200]f32,
-    color: [200] i32,
+    color: [200]i32,
 };
 fn computeVsParams(time: f64, play_field: *const PlayField) VsParams {
     _ = time;
@@ -578,10 +579,10 @@ fn computeVsParams(time: f64, play_field: *const PlayField) VsParams {
             rect.x *= play_field.x_size; // translate coords into pixels
             rect.y *= play_field.y_size; // translate coords into pixels
             switch (actor.texture_tag) {
-                BlockTextureTags.A => color[x  * 4 + (y*play_field.band_width * play_field.band_width)] = 1,
-                BlockTextureTags.B => color[x  * 4 + (y*play_field.band_width * play_field.band_width)] = 2,
-                BlockTextureTags.C => color[x  * 4 + (y*play_field.band_width * play_field.band_width)] = 3,
-                BlockTextureTags.D => color[x  * 4 + (y*play_field.band_width * play_field.band_width)] = 4,
+                BlockTextureTags.A => color[x * 4 + (y * play_field.band_width * play_field.band_width)] = 1,
+                BlockTextureTags.B => color[x * 4 + (y * play_field.band_width * play_field.band_width)] = 2,
+                BlockTextureTags.C => color[x * 4 + (y * play_field.band_width * play_field.band_width)] = 3,
+                BlockTextureTags.D => color[x * 4 + (y * play_field.band_width * play_field.band_width)] = 4,
             }
 
             if (actor.desaturate != 0.0) {
@@ -603,14 +604,13 @@ fn computeVsParams(time: f64, play_field: *const PlayField) VsParams {
         pos[32] = -0.30 + (@as(f32, @floatFromInt(rect.x)) * 0.20);
         pos[33] = 0.30 - (@as(f32, @floatFromInt(rect.y)) * 0.20);
         var index = (play_field.band_width - 1) * 4;
-        index = index + (play_field.band_height * play_field.band_height * (play_field.band_height-1));
+        index = index + (play_field.band_height * play_field.band_height * (play_field.band_height - 1));
         switch (actor.texture_tag) {
             BlockTextureTags.A => color[index + 4] = 1,
             BlockTextureTags.B => color[index + 4] = 2,
             BlockTextureTags.C => color[index + 4] = 3,
             BlockTextureTags.D => color[index + 4] = 4,
         }
-
     }
     // const timesine: f32 = @floatCast(std.math.sin(1.0 - @as(f32, @floatFromInt(time))));
     // var timesine: f32 = @floatCast(std.math.sin(1.0 - time));
@@ -627,7 +627,7 @@ fn computeVsParams(time: f64, play_field: *const PlayField) VsParams {
     //     0.0,             0.0,  0.0,             0.0,
     //     0.0,             0.0,  0.0,             0.0,
     // });
-    return VsParams {
+    return VsParams{
         .pos = pos,
         .color = color,
     };

@@ -193,6 +193,13 @@ pub const app_state = struct {
     var pass_action: sg.PassAction = .{};
     pub var dt: f64 = 0.0;
     var game_mode: GameModes.GameMode = undefined;
+    pub const offscreen = struct {
+        pub var attachments: sg.Attachments = .{};
+        pub var attachments_desc: sg.AttachmentsDesc = .{};
+        pub var pip: sg.Pipeline = .{};
+        pub var bind: sg.Bindings = .{};
+        pub var pass_action: sg.PassAction = .{};
+    };
 };
 
 export fn init() void {
@@ -204,24 +211,25 @@ export fn init() void {
 
     // shader and pipeline object
     var pip_desc: sg.PipelineDesc = .{
-        .shader = sg.makeShader(shader.playfieldShaderDesc(sg.queryBackend())),
+        .shader = sg.makeShader(shader.fsqShaderDesc(sg.queryBackend())),
         .primitive_type = .TRIANGLE_STRIP,
-        // .index_type = .UINT16,
         .depth = .{
-            // .compare = .LESS_EQUAL,
             .write_enabled = true,
         },
         .cull_mode = .NONE,
     };
-    // _ = pip_desc;
-    // pip_desc.layout.buffers[1].step_func = .PER_INSTANCE;
-    // pip_desc.layout.buffers[0].step_func = .PER_INSTANCE;
+    pip_desc.colors[0] = .{
+        // .write_mask = sg.ColorMask.RGB,
+        .pixel_format = sg.PixelFormat.RGBA8,
+        .blend = .{ .enabled = true, .src_factor_rgb = sg.BlendFactor.SRC_ALPHA, .dst_factor_rgb = sg.BlendFactor.ONE_MINUS_SRC_ALPHA },
+    };
+
     pip_desc.layout.attrs[shader.ATTR_playfield_position].format = .FLOAT3;
     pip_desc.layout.attrs[shader.ATTR_playfield_color_in].format = .FLOAT4;
     pip_desc.layout.attrs[shader.ATTR_playfield_texcoord0].format = .FLOAT2;
     app_state.pip = sg.makePipeline(pip_desc);
     // framebuffer clear color
-    app_state.pass_action.colors[0] = .{ .load_action = .CLEAR, .clear_value = .{ .r = 0.25, .g = 0.5, .b = 1.75, .a = 0.25 } };
+    app_state.pass_action.colors[0] = .{ .load_action = .CLEAR, .clear_value = .{ .r = 0.15, .g = 0.15, .b = 0.25, .a = 0.25 } };
 
     app_state.bind.samplers[shader.SMP_smp] = sg.makeSampler(.{});
 
@@ -234,7 +242,59 @@ export fn init() void {
             1.0,  1.0,  1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0,
         }),
     });
+
+    var offscreen_pip_desc: sg.PipelineDesc = .{
+        .shader = sg.makeShader(shader.playfieldShaderDesc(sg.queryBackend())),
+        .primitive_type = .TRIANGLE_STRIP,
+        .cull_mode = .NONE,
+        .sample_count = 1,
+        .depth = .{
+            .pixel_format = .NONE,
+            // .pixel_format = sg.PixelFormat.RGBA8,
+            .write_enabled = true,
+        },
+        .color_count = 1,
+    };
+
+    offscreen_pip_desc.layout.attrs[shader.ATTR_playfield_position].format = .FLOAT3;
+    offscreen_pip_desc.layout.attrs[shader.ATTR_playfield_color_in].format = .FLOAT4;
+    offscreen_pip_desc.layout.attrs[shader.ATTR_playfield_texcoord0].format = .FLOAT2;
+    app_state.offscreen.pip = sg.makePipeline(offscreen_pip_desc);
+    app_state.offscreen.bind.samplers[shader.SMP_smp] = sg.makeSampler(.{});
+    app_state.offscreen.bind.vertex_buffers[0] = sg.makeBuffer(.{
+        .data = sg.asRange(&[_]f32{
+            // positions        colors           UV tex
+            -1.0, -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0,
+            1.0,  -1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0,
+            -1.0, 1.0,  1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+            1.0,  1.0,  1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0,
+        }),
+    });
+    app_state.offscreen.pass_action.colors[0] = .{ .load_action = .CLEAR, .clear_value = .{ .r = 0.0, .g = 0.0, .b = 0.0, .a = 0.0 } };
+
+    createOffscreenAttachment(sapp.width(), sapp.height());
+
     app_state.game_mode = GameModes.GameMode{ .timed_play_sokol = TimedPlayModeSokol.init(&game_state) catch unreachable };
+}
+
+fn createOffscreenAttachment(w: i32, h: i32) void {
+    sg.destroyAttachments(app_state.offscreen.attachments);
+    for (app_state.offscreen.attachments_desc.colors) |att| {
+        sg.destroyImage(att.image);
+    }
+
+    // create offscreen render target images and pass
+    const color_img_desc: sg.ImageDesc = .{
+        .render_target = true,
+        .width = w,
+        .height = h,
+        .sample_count = 1,
+    };
+    inline for (.{0}) |i| {
+        app_state.offscreen.attachments_desc.colors[i].image = sg.makeImage(color_img_desc);
+    }
+    app_state.offscreen.attachments = sg.makeAttachments(app_state.offscreen.attachments_desc);
+    app_state.bind.images[shader.IMG_tex0] = app_state.offscreen.attachments_desc.colors[0].image;
 }
 
 export fn frame() void {
@@ -243,11 +303,11 @@ export fn frame() void {
     // const time: f64 = @floatCast(sapp.timing.last);
     app_state.dt += time;
 
+    app_state.game_mode.render(&app_state);
     sg.beginPass(.{ .action = app_state.pass_action, .swapchain = sglue.swapchain() });
     sg.applyPipeline(app_state.pip);
     sg.applyBindings(app_state.bind);
-    app_state.game_mode.render(&app_state);
-    sg.draw(0, 4, 17);
+    sg.draw(0, 4, 1);
     sg.endPass();
     sg.commit();
     const ns_per_ms = 1000 * 1000;
@@ -258,8 +318,7 @@ export fn cleanup() void {
 }
 
 export fn my_event_cb(event: [*c]const sevent) callconv(.C) void {
-
-        _ = app_state.game_mode.on_input(event);
+    _ = app_state.game_mode.on_input(event);
     // switch (event.*.type) {
     //     sokol.app.EventType.MOUSE_DOWN => {
     //         _ = app_state.game_mode.ok_input();

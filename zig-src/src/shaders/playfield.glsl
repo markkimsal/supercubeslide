@@ -8,14 +8,20 @@ flat out int tex;
 
 struct SpriteData {
     float position[2];
+    uint block_color;
 };
 
-layout(std140, binding=1) uniform DataBlock {
+// layout(std140, binding=1) uniform DataBlock {
+// layout(std140, binding=1) readonly buffer ssbo {
+//     SpriteData sd[];
+// };
+layout(std140, binding=2) uniform DataBlock {
     vec4 pos[50];
     ivec4 block_color[50];
 };
 
 void main() {
+    // gl_Position = vec4(sd[gl_InstanceIndex].position[0],sd[gl_InstanceIndex].position[1], 1.0, 1.0);
     gl_Position = position * vec4(0.1, 0.1, 1.0, 1.0);
 
     const int newspritepos = gl_InstanceIndex;
@@ -91,3 +97,34 @@ void main() {
 @end
 
 @program playfield vs fs
+
+@vs vsquad
+in vec4 position;
+in vec4 color_in;
+in vec2 texcoord0;
+out vec2 uv0;
+out vec4 color;
+
+void main() {
+    // gl_Position = vec4(pos*2.0-1.0, 0.5, 1.0);
+    gl_Position = position;
+    uv0 = texcoord0;
+    color = color_in;
+}
+@end
+
+@fs fsquad
+layout(binding=1) uniform texture2D tex0;
+layout(binding=1) uniform sampler smp;
+
+in vec2 uv0;
+in vec4 color;
+out vec4 frag_color;
+
+void main() {
+    frag_color = texture(sampler2D(tex0, smp), uv0).rgba;
+    // vec3 c0 = texture(sampler2D(tex0, smp), uv0).xyz;
+    // frag_color = vec4(c0, 1.0);
+}
+@end
+@program fsq vsquad fsquad
