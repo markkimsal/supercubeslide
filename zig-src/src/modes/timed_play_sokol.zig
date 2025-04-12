@@ -127,7 +127,7 @@ pub const TimedPlayMode = struct {
         sg.applyPipeline(state.offscreen.pip);
         sg.applyBindings(state.offscreen.bind);
         sg.applyUniforms(shader.UB_DataBlock, sg.asRange(&vs_params));
-        sg.draw(0, 4, 17);
+        sg.draw(0, 4, (self.play_field.band_width * self.play_field.band_height) + 1);
         sg.endPass();
     }
 
@@ -368,9 +368,9 @@ pub const TimedPlayMode = struct {
     }
 
     pub fn update(self: *TimedPlayMode) ?GameModes.GameModeType {
-        for (self.play_field.actors.items) |*actor| {
-            self.moveCounterClockwise(actor);
-        }
+        // for (self.play_field.actors.items) |*actor| {
+        //     self.moveCounterClockwise(actor);
+        // }
 
         if (self.next_mode) |mode| {
             return mode;
@@ -567,8 +567,8 @@ fn computeVsParams(time: f64, play_field: *const PlayField) VsParams {
         for (0..play_field.band_width) |x| {
             const actor = play_field.field[y][x].*;
             var rect = actor.rect;
-            pos[x * 2 + (y * 8)] = -0.30 + (@as(f32, @floatFromInt(x)) * 0.20);
-            pos[x * 2 + (y * 8) + 1] = 0.30 - (@as(f32, @floatFromInt(y)) * 0.20);
+            pos[x * 2 + (y * play_field.band_width * 2)] = -0.30 + (@as(f32, @floatFromInt(x)) * 0.20);
+            pos[x * 2 + (y * play_field.band_width * 2) + 1] = 0.30 - (@as(f32, @floatFromInt(y)) * 0.20);
 
             // pos[x * 2 + (y * 8)] = -0.9;
             // pos[x * 2 + (y * 8) + 1] = 0.9;
@@ -579,10 +579,10 @@ fn computeVsParams(time: f64, play_field: *const PlayField) VsParams {
             rect.x *= play_field.x_size; // translate coords into pixels
             rect.y *= play_field.y_size; // translate coords into pixels
             switch (actor.texture_tag) {
-                BlockTextureTags.A => color[x * 4 + (y * play_field.band_width * play_field.band_width)] = 1,
-                BlockTextureTags.B => color[x * 4 + (y * play_field.band_width * play_field.band_width)] = 2,
-                BlockTextureTags.C => color[x * 4 + (y * play_field.band_width * play_field.band_width)] = 3,
-                BlockTextureTags.D => color[x * 4 + (y * play_field.band_width * play_field.band_width)] = 4,
+                BlockTextureTags.A => color[x * 4 + (y * play_field.band_width * 4)] = 1,
+                BlockTextureTags.B => color[x * 4 + (y * play_field.band_width * 4)] = 2,
+                BlockTextureTags.C => color[x * 4 + (y * play_field.band_width * 4)] = 3,
+                BlockTextureTags.D => color[x * 4 + (y * play_field.band_width * 4)] = 4,
             }
 
             if (actor.desaturate != 0.0) {
@@ -601,16 +601,19 @@ fn computeVsParams(time: f64, play_field: *const PlayField) VsParams {
 
     for (play_field.actors.items) |*actor| {
         const rect = actor.rect;
-        pos[32] = -0.30 + (@as(f32, @floatFromInt(rect.x)) * 0.20);
-        pos[33] = 0.30 - (@as(f32, @floatFromInt(rect.y)) * 0.20);
-        var index = (play_field.band_width - 1) * 4;
-        index = index + (play_field.band_height * play_field.band_height * (play_field.band_height - 1));
+        var index: usize = (((play_field.band_height - 1) * play_field.band_width * 2) + (play_field.band_width * 2));
+        pos[index] = -0.30 + (@as(f32, @floatFromInt(rect.x)) * 0.20);
+        pos[index + 1] = 0.30 - (@as(f32, @floatFromInt(rect.y)) * 0.20);
+        // index = (play_field.band_width - 1) * 4;
+        // index = index + (play_field.band_height * play_field.band_width * (play_field.band_height - 1));
+        index = (play_field.band_height * play_field.band_width * 4);
         switch (actor.texture_tag) {
-            BlockTextureTags.A => color[index + 4] = 1,
-            BlockTextureTags.B => color[index + 4] = 2,
-            BlockTextureTags.C => color[index + 4] = 3,
-            BlockTextureTags.D => color[index + 4] = 4,
+            BlockTextureTags.A => color[index] = 1,
+            BlockTextureTags.B => color[index] = 2,
+            BlockTextureTags.C => color[index] = 3,
+            BlockTextureTags.D => color[index] = 4,
         }
+        std.debug.print("{any}\n", .{index + 4});
     }
     // const timesine: f32 = @floatCast(std.math.sin(1.0 - @as(f32, @floatFromInt(time))));
     // var timesine: f32 = @floatCast(std.math.sin(1.0 - time));

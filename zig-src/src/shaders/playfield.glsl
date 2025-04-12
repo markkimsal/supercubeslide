@@ -1,20 +1,9 @@
 @vs vs
 in vec4 position;
-in vec4 color_in;
 in vec2 texcoord0;
-out vec4 color;
 out vec2 uv;
 flat out int tex;
 
-struct SpriteData {
-    float position[2];
-    uint block_color;
-};
-
-// layout(std140, binding=1) uniform DataBlock {
-// layout(std140, binding=1) readonly buffer ssbo {
-//     SpriteData sd[];
-// };
 layout(std140, binding=2) uniform DataBlock {
     vec4 pos[50];
     ivec4 block_color[50];
@@ -66,7 +55,6 @@ tex = block_color[int(floor(newspritepos))][0];
     //     gl_Position += vec4(-0.9, -0.9, 0.0, 0.0);
     //     // gl_Position += vec4(pos[int(gl_InstanceIndex)].zw, 0.0, 0.0);
     // }
-    color = color_in;
     uv = texcoord0;
 }
 @end
@@ -77,7 +65,6 @@ layout(binding=1) uniform sampler smp;
 layout(binding=2) uniform texture2D tex_b;
 layout(binding=3) uniform texture2D tex_c;
 layout(binding=4) uniform texture2D tex_d;
-in vec4 color;
 in vec2 uv;
 flat in int tex;
 out vec4 frag_color;
@@ -99,17 +86,25 @@ void main() {
 @program playfield vs fs
 
 @vs vsquad
+// struct SpriteData {
+//     float position[2];
+//     float scale[2];
+// };
+
 in vec4 position;
-in vec4 color_in;
 in vec2 texcoord0;
+in vec4 sppos;
 out vec2 uv0;
-out vec4 color;
+
+// layout(std140, binding=1) readonly buffer ssbo {
+//     SpriteData sd[];
+// };
 
 void main() {
-    // gl_Position = vec4(pos*2.0-1.0, 0.5, 1.0);
-    gl_Position = position;
+    // gl_Position = vec4(sd[gl_InstanceIndex].position[0],sd[gl_InstanceIndex].position[1], 1.0, 1.0);
+    gl_Position = vec4(position[0], position[1], 1.0, 1.0);
+    gl_Position *= vec4(sppos.x, sppos.x, 1.0, 1.0);
     uv0 = texcoord0;
-    color = color_in;
 }
 @end
 
@@ -118,13 +113,26 @@ layout(binding=1) uniform texture2D tex0;
 layout(binding=1) uniform sampler smp;
 
 in vec2 uv0;
-in vec4 color;
 out vec4 frag_color;
 
+vec4 generic_desaturate(vec4 color, float factor)
+{
+	vec3 lum = vec3(0.299, 0.587, 0.114);
+	vec3 gray = vec3(dot(lum, color.xyz));
+	return vec4(mix(color.xyz, gray, factor), color.a);
+}
+vec4 photoshop_desaturate(vec4 color)
+{
+    float bw = (min(color.r, min(color.g, color.b)) + max(color.r, max(color.g, color.b))) * 0.5;
+    return vec4(bw, bw, bw, color.a);
+
+}
 void main() {
     frag_color = texture(sampler2D(tex0, smp), uv0).rgba;
-    // vec3 c0 = texture(sampler2D(tex0, smp), uv0).xyz;
-    // frag_color = vec4(c0, 1.0);
+    // frag_color = generic_desaturate(frag_color, 0.6);
+    // frag_color = photoshop_desaturate(frag_color);
 }
+
+
 @end
 @program fsq vsquad fsquad

@@ -224,9 +224,10 @@ export fn init() void {
         .blend = .{ .enabled = true, .src_factor_rgb = sg.BlendFactor.SRC_ALPHA, .dst_factor_rgb = sg.BlendFactor.ONE_MINUS_SRC_ALPHA },
     };
 
-    pip_desc.layout.attrs[shader.ATTR_playfield_position].format = .FLOAT3;
-    pip_desc.layout.attrs[shader.ATTR_playfield_color_in].format = .FLOAT4;
-    pip_desc.layout.attrs[shader.ATTR_playfield_texcoord0].format = .FLOAT2;
+    pip_desc.layout.buffers[1].step_func = .PER_INSTANCE;
+    pip_desc.layout.attrs[shader.ATTR_fsq_position].format = .FLOAT3;
+    pip_desc.layout.attrs[shader.ATTR_fsq_texcoord0].format = .FLOAT2;
+    pip_desc.layout.attrs[shader.ATTR_fsq_sppos] = .{ .format = .FLOAT4, .buffer_index = 1 };
     app_state.pip = sg.makePipeline(pip_desc);
     // framebuffer clear color
     app_state.pass_action.colors[0] = .{ .load_action = .CLEAR, .clear_value = .{ .r = 0.15, .g = 0.15, .b = 0.25, .a = 0.25 } };
@@ -235,12 +236,18 @@ export fn init() void {
 
     app_state.bind.vertex_buffers[0] = sg.makeBuffer(.{
         .data = sg.asRange(&[_]f32{
-            // positions        colors           UV tex
-            -1.0, -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0,
-            1.0,  -1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0,
-            -1.0, 1.0,  1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0,
-            1.0,  1.0,  1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0,
+            // positions (float3)    UV tex (float2)
+            -1.0, -1.0, 1.0, 0.0, 0.0,
+            1.0,  -1.0, 1.0, 1.0, 0.0,
+            -1.0, 1.0,  1.0, 0.0, 1.0,
+            1.0,  1.0,  1.0, 1.0, 1.0,
         }),
+    });
+    const max_sprites = 50;
+    // an empty dynamic vertex buffer for the instancing data, goes in vertex buffer slot 1
+    app_state.bind.vertex_buffers[1] = sg.makeBuffer(.{
+        .usage = .STREAM,
+        .size = max_sprites * @sizeOf(f32) * 4,
     });
 
     var offscreen_pip_desc: sg.PipelineDesc = .{
@@ -257,17 +264,16 @@ export fn init() void {
     };
 
     offscreen_pip_desc.layout.attrs[shader.ATTR_playfield_position].format = .FLOAT3;
-    offscreen_pip_desc.layout.attrs[shader.ATTR_playfield_color_in].format = .FLOAT4;
     offscreen_pip_desc.layout.attrs[shader.ATTR_playfield_texcoord0].format = .FLOAT2;
     app_state.offscreen.pip = sg.makePipeline(offscreen_pip_desc);
     app_state.offscreen.bind.samplers[shader.SMP_smp] = sg.makeSampler(.{});
     app_state.offscreen.bind.vertex_buffers[0] = sg.makeBuffer(.{
         .data = sg.asRange(&[_]f32{
-            // positions        colors           UV tex
-            -1.0, -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0,
-            1.0,  -1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0,
-            -1.0, 1.0,  1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0,
-            1.0,  1.0,  1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0,
+            // positions     UV tex
+            -1.0, -1.0, 1.0, 0.0, 0.0,
+            1.0,  -1.0, 1.0, 1.0, 0.0,
+            -1.0, 1.0,  1.0, 0.0, 1.0,
+            1.0,  1.0,  1.0, 1.0, 1.0,
         }),
     });
     app_state.offscreen.pass_action.colors[0] = .{ .load_action = .CLEAR, .clear_value = .{ .r = 0.0, .g = 0.0, .b = 0.0, .a = 0.0 } };
@@ -303,8 +309,19 @@ export fn frame() void {
     // const time: f64 = @floatCast(sapp.timing.last);
     app_state.dt += time;
 
+    _ = app_state.game_mode.update();
     app_state.game_mode.render(&app_state);
+
     sg.beginPass(.{ .action = app_state.pass_action, .swapchain = sglue.swapchain() });
+
+    //update dynamic sprite pos buffer
+    var pos: [50 * 4]f32 = undefined;
+    @memset(&pos, 0);
+    // const mypos: f32 = @as(f32, @floatCast(std.math.sin(app_state.dt) * std.math.sin(app_state.dt)));
+    const mypos: f32 = 1.0;
+    // const uint32: u32 = @as(u32, @bitCast(mypos));
+    pos[0] = mypos;
+    sg.updateBuffer(app_state.bind.vertex_buffers[1], sg.asRange(&pos));
     sg.applyPipeline(app_state.pip);
     sg.applyBindings(app_state.bind);
     sg.draw(0, 4, 1);
