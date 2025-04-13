@@ -203,7 +203,7 @@ pub const app_state = struct {
 };
 
 export fn init() void {
-    var game_state = app_state{};
+    // var game_state = app_state{};
     sg.setup(.{
         .environment = sglue.environment(),
         .logger = .{ .func = sokol.log.func },
@@ -265,6 +265,12 @@ export fn init() void {
 
     offscreen_pip_desc.layout.attrs[shader.ATTR_playfield_position].format = .FLOAT3;
     offscreen_pip_desc.layout.attrs[shader.ATTR_playfield_texcoord0].format = .FLOAT2;
+
+    offscreen_pip_desc.layout.buffers[1].step_func = .PER_INSTANCE;
+    offscreen_pip_desc.layout.attrs[shader.ATTR_playfield_sppos] = .{ .format = .FLOAT2, .buffer_index = 1 };
+    offscreen_pip_desc.layout.attrs[shader.ATTR_playfield_block_color] = .{ .format = .FLOAT, .buffer_index = 1 };
+    offscreen_pip_desc.layout.attrs[shader.ATTR_playfield_desat] = .{ .format = .FLOAT, .buffer_index = 1 };
+
     app_state.offscreen.pip = sg.makePipeline(offscreen_pip_desc);
     app_state.offscreen.bind.samplers[shader.SMP_smp] = sg.makeSampler(.{});
     app_state.offscreen.bind.vertex_buffers[0] = sg.makeBuffer(.{
@@ -276,11 +282,12 @@ export fn init() void {
             1.0,  1.0,  1.0, 1.0, 1.0,
         }),
     });
+
     app_state.offscreen.pass_action.colors[0] = .{ .load_action = .CLEAR, .clear_value = .{ .r = 0.0, .g = 0.0, .b = 0.0, .a = 0.0 } };
 
     createOffscreenAttachment(sapp.width(), sapp.height());
 
-    app_state.game_mode = GameModes.GameMode{ .timed_play_sokol = TimedPlayModeSokol.init(&game_state) catch unreachable };
+    app_state.game_mode = GameModes.GameMode{ .timed_play_sokol = TimedPlayModeSokol.init(&app_state) catch unreachable };
 }
 
 fn createOffscreenAttachment(w: i32, h: i32) void {

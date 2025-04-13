@@ -14,9 +14,11 @@ const FieldContainer = [play_field_height][play_field_width]*Sprite;
 var field: FieldContainer = undefined;
 var rand = std.rand.Xoroshiro128.init(1234);
 
+pub const max_width: u8 = 8;
+pub const max_height: u8 = 8;
 pub const PlayField = struct {
-    max_width: u8 = 8,
-    max_height: u8 = 8,
+    max_width: u8 = max_width,
+    max_height: u8 = max_height,
     x_size: u8 = 36,
     y_size: u8 = 36,
     band_width: u8,

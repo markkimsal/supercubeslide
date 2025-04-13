@@ -17,6 +17,8 @@ const TaggedAnimation = @import("../animation.zig").TaggedAnimation;
 const AnimationType = @import("../animation.zig").AnimationType;
 const app_state = @import("../sokol.zig").app_state;
 const zigimg = @import("zigimg");
+const max_height = @import("../play_field.zig").max_height;
+const max_width = @import("../play_field.zig").max_width;
 
 const heap_alloc = std.heap.c_allocator;
 pub const TimedPlayMode = struct {
@@ -37,10 +39,9 @@ pub const TimedPlayMode = struct {
     level_number: u16 = 0,
     score: i16 = 0,
 
-    pub fn init(state: *app_state) !TimedPlayMode {
+    pub fn init(state: anytype) !TimedPlayMode {
         // const img = @embedFile("background.png");
         // _ = img;
-        _ = state;
         var gpa = std.heap.GeneralPurposeAllocator(.{}){};
         defer _ = gpa.deinit();
 
@@ -96,6 +97,11 @@ pub const TimedPlayMode = struct {
         // };
 
         var play_field = PlayField.init(heap_alloc, 5, 5).?;
+        const max_sprites = (max_height * max_width) + 1;
+        state.offscreen.bind.vertex_buffers[1] = sg.makeBuffer(.{
+            .usage = .STREAM,
+            .size = @as(usize, @intCast(max_sprites)) * @sizeOf(VsParams),
+        });
 
         var sprite = Sprite.init(BlockTextureTags.A, play_field.x_size, play_field.y_size);
         sprite.setPosition(-1, 0);
@@ -126,7 +132,8 @@ pub const TimedPlayMode = struct {
         sg.beginPass(.{ .action = state.offscreen.pass_action, .attachments = state.offscreen.attachments });
         sg.applyPipeline(state.offscreen.pip);
         sg.applyBindings(state.offscreen.bind);
-        sg.applyUniforms(shader.UB_DataBlock, sg.asRange(&vs_params));
+        sg.updateBuffer(state.offscreen.bind.vertex_buffers[1], sg.asRange(&vs_params));
+        // sg.applyUniforms(shader.UB_DataBlock, sg.asRange(&vs_params));
         sg.draw(0, 4, (self.play_field.band_width * self.play_field.band_height) + 1);
         sg.endPass();
     }
@@ -552,68 +559,60 @@ pub const TimedPlayMode = struct {
     }
 };
 const VsParams = struct {
-    pos: [200]f32,
-    color: [200]i32,
+    pos_x: f32,
+    pos_y: f32,
+    color: u32,
+    desat: f32,
 };
-fn computeVsParams(time: f64, play_field: *const PlayField) VsParams {
-    _ = time;
-    var pos: [50 * 4]f32 = undefined;
-    // std.mem.zeroes(&pos);
-    @memset(&pos, 0);
 
-    var color: [50 * 4]i32 = undefined;
-    @memset(&color, 0);
+fn computeVsParams(time: f64, play_field: *const PlayField) [(8 * 8) + 1]VsParams {
+    _ = time;
+    // var params: [(play_field.band_height * play_field.band_width) + 1]VsParams = undefined;
+    // comptime known max
+    const max_sprites = (max_height * max_width) + 1;
+    var params: [max_sprites]VsParams = undefined;
+    var instance_id: usize = 0;
+    // std.mem.zeroes(&params, 0);
+    @memset(&params, .{ .pos_x = 0, .pos_y = 0, .color = 0, .desat = 0.0 });
+
+    // each block will take up 10 pct of the screen.
+    // use 0.20 because there is -1 to 0 and 0 to +1
+    // initial offset should be based on the full width and height
+    // -0.30 was good for a 4x4 setup.
+    const initial_offset_x = -1.0 * ((@as(f32, @floatFromInt(play_field.band_width)) * 0.10) - 0.1);
+    const initial_offset_y = ((@as(f32, @floatFromInt(play_field.band_height)) * 0.10) - 0.1);
     for (0..play_field.band_height) |y| {
         for (0..play_field.band_width) |x| {
             const actor = play_field.field[y][x].*;
-            var rect = actor.rect;
-            pos[x * 2 + (y * play_field.band_width * 2)] = -0.30 + (@as(f32, @floatFromInt(x)) * 0.20);
-            pos[x * 2 + (y * play_field.band_width * 2) + 1] = 0.30 - (@as(f32, @floatFromInt(y)) * 0.20);
 
-            // pos[x * 2 + (y * 8)] = -0.9;
-            // pos[x * 2 + (y * 8) + 1] = 0.9;
+            params[instance_id].pos_x = initial_offset_x + (@as(f32, @floatFromInt(x)) * 0.20);
+            params[instance_id].pos_y = initial_offset_y - (@as(f32, @floatFromInt(y)) * 0.20);
 
-            // std.debug.print("{any} {any}\n", .{ x, y });
-            // std.debug.print("{any} {any}\n", .{ pos[0], pos[1] });
-
-            rect.x *= play_field.x_size; // translate coords into pixels
-            rect.y *= play_field.y_size; // translate coords into pixels
             switch (actor.texture_tag) {
-                BlockTextureTags.A => color[x * 4 + (y * play_field.band_width * 4)] = 1,
-                BlockTextureTags.B => color[x * 4 + (y * play_field.band_width * 4)] = 2,
-                BlockTextureTags.C => color[x * 4 + (y * play_field.band_width * 4)] = 3,
-                BlockTextureTags.D => color[x * 4 + (y * play_field.band_width * 4)] = 4,
+                BlockTextureTags.A => params[instance_id].color = 1,
+                BlockTextureTags.B => params[instance_id].color = 2,
+                BlockTextureTags.C => params[instance_id].color = 3,
+                BlockTextureTags.D => params[instance_id].color = 4,
             }
 
-            if (actor.desaturate != 0.0) {
-                // const alpha_blend = actor.desaturate * 255;
-                // const alpha_blend_2 = @as(u8, 255 - @as(u8, @intFromFloat(alpha_blend)));
-                // _ = sdl.SDL_SetTextureAlphaMod(actor.getTexture(), alpha_blend_2);
-                // _ = sdl.SDL_RenderCopy(renderer, actor.getTexture(), null, &rect);
-                // _ = sdl.SDL_SetTextureAlphaMod(actor.getTexture(), 255);
-            } else {
-                // if (sdl.SDL_RenderCopy(renderer, actor.getTexture(), null, &rect) < 0) {
-                //     std.log.err("error copying field cube to renderer", .{});
-                // }
-            }
+            params[instance_id].desat = @as(f32, @floatCast(actor.desaturate));
+            instance_id += 1;
         }
     }
 
     for (play_field.actors.items) |*actor| {
         const rect = actor.rect;
         var index: usize = (((play_field.band_height - 1) * play_field.band_width * 2) + (play_field.band_width * 2));
-        pos[index] = -0.30 + (@as(f32, @floatFromInt(rect.x)) * 0.20);
-        pos[index + 1] = 0.30 - (@as(f32, @floatFromInt(rect.y)) * 0.20);
-        // index = (play_field.band_width - 1) * 4;
-        // index = index + (play_field.band_height * play_field.band_width * (play_field.band_height - 1));
+        params[instance_id].pos_x = initial_offset_x + (@as(f32, @floatFromInt(rect.x)) * 0.20);
+        params[instance_id].pos_y = initial_offset_y - (@as(f32, @floatFromInt(rect.y)) * 0.20);
+
         index = (play_field.band_height * play_field.band_width * 4);
         switch (actor.texture_tag) {
-            BlockTextureTags.A => color[index] = 1,
-            BlockTextureTags.B => color[index] = 2,
-            BlockTextureTags.C => color[index] = 3,
-            BlockTextureTags.D => color[index] = 4,
+            BlockTextureTags.A => params[instance_id].color = 1,
+            BlockTextureTags.B => params[instance_id].color = 2,
+            BlockTextureTags.C => params[instance_id].color = 3,
+            BlockTextureTags.D => params[instance_id].color = 4,
         }
-        std.debug.print("{any}\n", .{index + 4});
     }
     // const timesine: f32 = @floatCast(std.math.sin(1.0 - @as(f32, @floatFromInt(time))));
     // var timesine: f32 = @floatCast(std.math.sin(1.0 - time));
@@ -630,9 +629,5 @@ fn computeVsParams(time: f64, play_field: *const PlayField) VsParams {
     //     0.0,             0.0,  0.0,             0.0,
     //     0.0,             0.0,  0.0,             0.0,
     // });
-    return VsParams{
-        .pos = pos,
-        .color = color,
-    };
-    // return .{ .pos = pos };
+    return params;
 }
