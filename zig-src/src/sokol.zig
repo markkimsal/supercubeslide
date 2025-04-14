@@ -5,6 +5,7 @@ const sg = sokol.gfx;
 const sglue = sokol.glue;
 const sevent = sokol.app.Event;
 const shader = @import("shaders/playfield.glsl.zig");
+const stime = sokol.time;
 pub const sdl = @cImport({
     @cInclude("SDL.h");
     @cInclude("SDL_image.h");
@@ -203,6 +204,7 @@ pub const app_state = struct {
 };
 
 export fn init() void {
+    stime.setup();
     // var game_state = app_state{};
     sg.setup(.{
         .environment = sglue.environment(),
@@ -315,6 +317,7 @@ export fn frame() void {
     // const time: u64 = sapp.frameCount();
     // const time: f64 = @floatCast(sapp.timing.last);
     app_state.dt += time;
+    const now = stime.now();
 
     _ = app_state.game_mode.update();
     app_state.game_mode.render(&app_state);
@@ -334,8 +337,10 @@ export fn frame() void {
     sg.draw(0, 4, 1);
     sg.endPass();
     sg.commit();
+
+    const delay: u64 = @as(u64, @intFromFloat(stime.ns(stime.diff(stime.now(), now))));
     const ns_per_ms = 1000 * 1000;
-    std.time.sleep(32 * ns_per_ms);
+    std.time.sleep((32 * ns_per_ms) - delay);
 }
 export fn cleanup() void {
     sg.shutdown();
