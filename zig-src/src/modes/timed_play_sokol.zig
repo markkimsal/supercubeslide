@@ -2,6 +2,7 @@ const std = @import("std");
 const sokol = @import("sokol");
 const EventType = sokol.app.EventType;
 const sg = sokol.gfx;
+const sglue = sokol.glue;
 const shader = @import("../shaders/playfield.glsl.zig");
 // const sdl = @import("sdl2");
 const MainModule = @import("../main.zig");
@@ -35,13 +36,13 @@ pub const TimedPlayMode = struct {
     in_drag: bool,
     drag_dx: c_int,
     drag_ticks: c_int,
+    drag_s_x: f32,
+    drag_s_y: f32,
     move_count: u16 = 0,
     level_number: u16 = 0,
     score: i16 = 0,
 
     pub fn init(state: anytype) !TimedPlayMode {
-        // const img = @embedFile("background.png");
-        // _ = img;
         var gpa = std.heap.GeneralPurposeAllocator(.{}){};
         defer _ = gpa.deinit();
 
@@ -49,6 +50,7 @@ pub const TimedPlayMode = struct {
 
         var cube_a = @embedFile("cube_a.png");
         var image = try zigimg.Image.fromMemory(allocator, cube_a[0..]);
+        // image = flip_image(allocator, &image);
         var img_desc: sg.ImageDesc = .{
             .width = 24,
             .height = 24,
@@ -58,6 +60,7 @@ pub const TimedPlayMode = struct {
 
         var cube_b = @embedFile("cube_b.png");
         var image_b = try zigimg.Image.fromMemory(allocator, cube_b[0..]);
+        // image_b = flip_image(allocator, &image_b);
         var img_desc_b: sg.ImageDesc = .{
             .width = 24,
             .height = 24,
@@ -87,6 +90,18 @@ pub const TimedPlayMode = struct {
         defer image_c.deinit();
         defer image_b.deinit();
         defer image.deinit();
+
+
+        const img = @embedFile("background.png");
+        var image_bg = try zigimg.Image.fromMemory(allocator, img[0..]);
+        var img_desc_bg: sg.ImageDesc = .{
+            .width = 640,
+            .height = 480,
+        };
+        img_desc_bg.data.subimage[0][0] = sg.asRange(image_bg.rawBytes());
+        app_state.bind.images[shader.IMG_tex1] = sg.makeImage(img_desc_bg);
+        defer image_bg.deinit();
+
 
         // const texture = SpriteModule.loadTextureMem(renderer, img[0..], SpriteModule.ImgFormat.png) catch |err| {
         //     return err;
@@ -118,6 +133,8 @@ pub const TimedPlayMode = struct {
             .touchdown = 0,
             .in_drag = false,
             .drag_dx = 0,
+            .drag_s_x = 0.0,
+            .drag_s_y = 0.0,
             .drag_ticks = 0,
             .col_removal_idx = null,
             .row_removal_idx = null,
@@ -136,6 +153,65 @@ pub const TimedPlayMode = struct {
         // sg.applyUniforms(shader.UB_DataBlock, sg.asRange(&vs_params));
         sg.draw(0, 4, (self.play_field.band_width * self.play_field.band_height) + 1);
         sg.endPass();
+
+        self.render_bg(state);
+    }
+
+    fn render_bg(self: @This(), state: anytype) void {
+        _ = self;
+        sg.beginPass(.{ .action = state.pass_action, .swapchain = sglue.swapchain() });
+
+        const sub_rect = centered_square(state.win_x, state.win_y, 1080, 1080);
+        // _ = sub_rect;
+        //update dynamic sprite pos buffer
+        var pos: [4 * 6]f32 = [4 * 6]f32{
+            // positions (float2)    pos (float2), texture_index (float), uv_flip (float)
+            1.0, 1.0, 0.0, 0.0, 0, 1,
+            sub_rect[0], sub_rect[1], -0.10, 0.0, 1, 0,
+            1.0, 1.0, 0.35, 0.35, 2, 1,
+            1.0, 1.0, 0.45, 0.45, 3, 1,
+        };
+        // @memset(&pos, 0);
+        // const mypos: f32 = @as(f32, @floatCast(std.math.sin(state.dt) * std.math.sin(state.dt)));
+
+        // const sub_rect = determine_sub_rect(state.win_x, state.win_y);
+        // sg.applyViewport(sub_rect[0], sub_rect[1], sub_rect[2], sub_rect[3], true);
+        // state.bind.images[shader.IMG_tex1] = state.offscreen.bind.images[shader.IMG_tex_a];
+        state.bind.images[shader.IMG_tex2] = state.offscreen.attachments_desc.colors[0].image;
+        sg.updateBuffer(state.bind.vertex_buffers[1], sg.asRange(&pos));
+        sg.applyPipeline(state.pip);
+        sg.applyBindings(state.bind);
+        sg.draw(0, 4, 2);
+
+    // state.bind.vertex_buffers[0][8] = -0.25;
+    // sg.destroyBuffer(state.bind.vertex_buffers[0]);
+    // state.bind.vertex_buffers[0] = sg.makeBuffer(.{
+    //     .data = sg.asRange(&[_]f32{
+    //         // positions (float3)    UV tex (float2), sizepos (float4)
+    //         -1.0, -1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.25, 0.25,
+    //         1.0,  -1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.25, 0.25,
+    //         -1.0, 1.0,  1.0, 0.0, 1.0, 1.0, 1.0, 0.25, 0.25,
+    //         1.0,  1.0,  1.0, 1.0, 1.0, 1.0, 1.0, 0.25, 0.25,
+
+    //     }),
+    // });
+
+        // state.bind.images[shader.IMG_tex0] = state.offscreen.attachments_desc.colors[0].image;
+        // sg.applyPipeline(state.pip);
+        // sg.applyBindings(state.bind);
+        // sg.draw(4, 4, 1);
+
+        // sg.endPass();
+        // sg.commit();
+
+        // sg.beginPass(.{ .action = state.pass_action, .swapchain = sglue.swapchain() });
+        // sg.updateBuffer(state.bind.vertex_buffers[1], sg.asRange(&pos));
+        // sg.applyPipeline(state.pip);
+        // sg.applyBindings(state.bind);
+        // sg.draw(5, 4, 1);
+
+        sg.endPass();
+        sg.commit();
     }
 
     pub fn paint(self: *TimedPlayMode, renderer: *sdl.SDL_Renderer, mode: *sdl.SDL_DisplayMode) void {
@@ -262,7 +338,63 @@ pub const TimedPlayMode = struct {
         if (self.animation != null) {
             return false;
         }
-        switch (event.*.type) {
+        return switch (event.*.type) {
+            EventType.TOUCHES_ENDED => {
+                if (self.in_drag) {
+                sokol.log.func("scs", 3, 0, "drag stop", 0, null, null);
+                    self.in_drag = false;
+                    self.touchdown = 0;
+                    self.drag_dx = 0;
+                    self.drag_s_x = 0;
+                    self.drag_ticks = 0;
+                    return true;
+                }
+                if (self.play_field.moveActor()) {
+                    self.recordMove();
+                    return true;
+                }
+                return true;
+            },
+            EventType.TOUCHES_MOVED => {
+    var concat_buffer: [250]u8 = std.mem.zeroes([250]u8);
+
+if (event.*.touches[0].changed) {
+    sokol.log.func("scs", 3, 0, "touch changed", 0, null, null);
+}
+                if (self.in_drag == false and self.drag_s_x == 0.0) {
+                    self.drag_s_x = event.*.touches[0].pos_x;
+                    self.drag_s_y = event.*.touches[0].pos_y;
+                    // self.in_drag = true;
+                    // return true;
+                }
+                const c_delta: c_int = @as(c_int, @intFromFloat(event.*.touches[0].pos_x - self.drag_s_x));
+                const scaling_factor = 20;
+
+    const msg = std.fmt.bufPrint(&concat_buffer, "{any}x{any}", .{ event.*.touches[0].pos_x, c_delta }) catch unreachable;
+    sokol.log.func("scs", 3, 0, @as([*c]u8, @ptrCast(msg)), 0, null, null);
+                if (@abs(@divFloor(c_delta, scaling_factor)) > 1) {
+                    self.in_drag = true;
+                    self.drag_s_x = event.*.touches[0].pos_x;
+                    self.drag_s_y = event.*.touches[0].pos_y;
+                } else {
+                    return false;
+                }
+
+                if (@divFloor(self.drag_dx + c_delta, scaling_factor) > self.drag_ticks) {
+                    self.drag_ticks = @divFloor(self.drag_dx + c_delta, scaling_factor);
+                    for (self.play_field.actors.items) |*actor| {
+                        self.moveClockwise(actor);
+                    }
+                }
+                if (@divFloor(self.drag_dx + c_delta, scaling_factor) < self.drag_ticks) {
+                    self.drag_ticks = @divFloor(self.drag_dx + c_delta, scaling_factor);
+                    for (self.play_field.actors.items) |*actor| {
+                        self.moveCounterClockwise(actor);
+                    }
+                }
+                self.drag_dx += c_delta;
+                return true;
+            },
             EventType.MOUSE_SCROLL => {
                 for (self.play_field.actors.items) |*actor| {
                     if (event.*.scroll_y > 0) {
@@ -271,6 +403,7 @@ pub const TimedPlayMode = struct {
                         self.moveClockwise(actor);
                     }
                 }
+                return true;
             },
             EventType.MOUSE_UP => {
                 if (event.*.mouse_button == sokol.app.Mousebutton.LEFT) {
@@ -278,10 +411,48 @@ pub const TimedPlayMode = struct {
                         self.recordMove();
                     }
                 }
+                return true;
             },
-            else => {},
-        }
-        return true;
+            EventType.KEY_DOWN => {
+                if (!event.*.key_repeat) {
+                    return false;
+                }
+                if (event.*.key_code == sokol.app.Keycode.LEFT) {
+                    for (self.play_field.actors.items) |*actor| {
+                        self.moveCounterClockwise(actor);
+                    }
+                    return true;
+                }
+                if (event.*.key_code == sokol.app.Keycode.RIGHT) {
+                    for (self.play_field.actors.items) |*actor| {
+                        self.moveClockwise(actor);
+                    }
+                    return true;
+                }
+                return false;
+            },
+            EventType.KEY_UP => {
+                if (event.*.key_code == sokol.app.Keycode.LEFT) {
+                    for (self.play_field.actors.items) |*actor| {
+                        self.moveCounterClockwise(actor);
+                    }
+                    return true;
+                }
+                if (event.*.key_code == sokol.app.Keycode.RIGHT) {
+                    for (self.play_field.actors.items) |*actor| {
+                        self.moveClockwise(actor);
+                    }
+                    return true;
+                }
+                if (event.*.key_code == sokol.app.Keycode.SPACE) {
+                    if (self.play_field.moveActor()) {
+                        return true;
+                    }
+                }
+                return false;
+            },
+            else => false,
+        };
     }
 
     pub fn on_touch(self: *TimedPlayMode, event: *sdl.SDL_Event) bool {
@@ -375,6 +546,7 @@ pub const TimedPlayMode = struct {
     }
 
     pub fn update(self: *TimedPlayMode) ?GameModes.GameModeType {
+        const ticks: u64 = sokol.app.frameCount();
         // for (self.play_field.actors.items) |*actor| {
         //     self.moveCounterClockwise(actor);
         // }
@@ -388,12 +560,12 @@ pub const TimedPlayMode = struct {
         }
         if (self.col_removal_idx) |col_idx| {
             _ = col_idx;
-            self.animation = Animation{ .t0 = sdl.SDL_GetTicks64(), .duration = 450, .anim_type = AnimationType.RemoveCol };
+            self.animation = Animation{ .t0 = ticks, .duration = 14, .anim_type = AnimationType.RemoveCol };
             return null;
         }
         if (self.row_removal_idx) |row_idx| {
             _ = row_idx;
-            self.animation = Animation{ .t0 = sdl.SDL_GetTicks64(), .duration = 450, .anim_type = AnimationType.RemoveRow };
+            self.animation = Animation{ .t0 = ticks, .duration = 14, .anim_type = AnimationType.RemoveRow };
             return null;
         }
         if (!self.resolveField()) {
@@ -410,8 +582,9 @@ pub const TimedPlayMode = struct {
         if (self.animation == null) {
             return;
         }
+        const ticks: u64 = sokol.app.frameCount();
         const animation = &self.animation.?;
-        const delta: u32 = @as(u32, @intCast(sdl.SDL_GetTicks64() - self.animation.?.t0));
+        const delta: u32 = @as(u32, @intCast(ticks - self.animation.?.t0));
         switch (animation.anim_type) {
             AnimationType.RemoveCol => {
                 const desaturate_percent: f64 = @as(f64, @floatFromInt(delta)) / @as(f64, @floatFromInt(animation.duration));
@@ -602,11 +775,11 @@ fn computeVsParams(time: f64, play_field: *const PlayField) [(8 * 8) + 1]VsParam
 
     for (play_field.actors.items) |*actor| {
         const rect = actor.rect;
-        var index: usize = (((play_field.band_height - 1) * play_field.band_width * 2) + (play_field.band_width * 2));
+        // var index: usize = (((play_field.band_height - 1) * play_field.band_width * 2) + (play_field.band_width * 2));
         params[instance_id].pos_x = initial_offset_x + (@as(f32, @floatFromInt(rect.x)) * 0.20);
         params[instance_id].pos_y = initial_offset_y - (@as(f32, @floatFromInt(rect.y)) * 0.20);
 
-        index = (play_field.band_height * play_field.band_width * 4);
+        // index = (play_field.band_height * play_field.band_width * 4);
         switch (actor.texture_tag) {
             BlockTextureTags.A => params[instance_id].color = 1,
             BlockTextureTags.B => params[instance_id].color = 2,
@@ -630,4 +803,76 @@ fn computeVsParams(time: f64, play_field: *const PlayField) [(8 * 8) + 1]VsParam
     //     0.0,             0.0,  0.0,             0.0,
     // });
     return params;
+}
+fn determine_sub_rect(x: i32, y: i32) [4]i32 {
+    const padding = 10;
+    const is_vertical = y > x;
+    var size: i32 = 1080;
+    if (is_vertical) {
+        if (x < size - padding)
+            size = x - padding;
+    } else {
+        if (y < size - padding) {
+            size = y - padding;
+        }
+    }
+    const voffset = @as(i32, @divTrunc(y - size, 2));
+    const hoffset = @as(i32, @divTrunc(x - size, 2));
+    // android is 1080x2400
+    // std.debug.print("{} {} {} {}\n", .{ voffset, hoffset, size, size });
+    // var concat_buffer: [250]u8 = std.mem.zeroes([250]u8);
+    // const msg = std.fmt.bufPrint(&concat_buffer, "{any}x{any}", .{ x, y }) catch unreachable;
+    // sokol.log.func("scs", 3, 0, @as([*c]u8, @ptrCast(msg)), 0, null, null);
+    return .{ hoffset, voffset, size, size };
+}
+// fn flip_image(alligator: std.mem.Allocator, image: *zigimg.Image) zigimg.Image {
+//     const newimage = zigimg.Image.create(alligator, image.width, image.height, image.pixelFormat()) catch unreachable;
+//     const oldBytes = image.rawBytes();
+//     const newBytes = newimage.rawBytes();
+//     var i: usize =0;
+//     while (i <= oldBytes.len) : (i += image.width) {
+//         newBytes[ i ] = oldBytes[ i ];
+//     }
+//     image.deinit();
+//     return newimage;
+// }
+
+
+fn centered_square (x: i32, y: i32, u:i32, v:i32) [4]f32 {
+    const padding = 10;
+    const is_vertical = y > x;
+    var size_u: i32 = u;
+    var size_v: i32 = v;
+    var ratio: f32 = 0.0;
+    if (is_vertical) {
+        ratio = @as(f32, @floatFromInt(x)) / @as(f32, @floatFromInt(y));
+        if (x < size_u - padding)
+            size_u = x - padding;
+            size_v = x - padding;
+    } else {
+        ratio = @as(f32, @floatFromInt(y)) / @as(f32, @floatFromInt(x));
+        if (y < size_v - padding) {
+            size_u = y - padding;
+            size_v = y - padding;
+        }
+    }
+
+    // const new_v: i32 = @as(i32, @intFromFloat(@divTrunc(@as(f32, @floatFromInt(v)), ratio)));
+    // const new_u: i32 = @as(i32, @intFromFloat(@divTrunc(@as(f32, @floatFromInt(u)), ratio)));
+
+    var new_vf = ratio * @as(f32, @floatFromInt(size_v));
+    var new_uf = ratio * @as(f32, @floatFromInt(size_u));
+    new_vf = @as(f32, @floatFromInt(size_v));
+    new_uf = @as(f32, @floatFromInt(size_u));
+    new_vf =  new_vf / @as(f32, @floatFromInt(y));
+    new_uf =  new_uf / @as(f32, @floatFromInt(x));
+    std.debug.print("{} {} {} {}\n", .{ new_vf, new_uf, new_vf, ratio });
+    return .{ new_uf, new_vf, new_vf, new_uf };
+
+    // // android is 1080x2400
+    // // std.debug.print("{} {} {} {}\n", .{ voffset, hoffset, size, size });
+    // // var concat_buffer: [250]u8 = std.mem.zeroes([250]u8);
+    // // const msg = std.fmt.bufPrint(&concat_buffer, "{any}x{any}", .{ x, y }) catch unreachable;
+    // // sokol.log.func("scs", 3, 0, @as([*c]u8, @ptrCast(msg)), 0, null, null);
+    // return .{ hoffset, voffset, size, size }
 }

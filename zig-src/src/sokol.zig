@@ -1,20 +1,21 @@
 const std = @import("std");
 const sokol = @import("sokol");
 const sapp = sokol.app;
+const slog = sokol.log;
 const sg = sokol.gfx;
 const sglue = sokol.glue;
 const sevent = sokol.app.Event;
 const shader = @import("shaders/playfield.glsl.zig");
 const stime = sokol.time;
-pub const sdl = @cImport({
-    @cInclude("SDL.h");
-    @cInclude("SDL_image.h");
-    @cInclude("SDL_ttf.h");
-    @cInclude("SDL_mixer.h");
-});
+// pub const sdl = @cImport({
+//     @cInclude("SDL.h");
+//     @cInclude("SDL_image.h");
+//     @cInclude("SDL_ttf.h");
+//     @cInclude("SDL_mixer.h");
+// });
 const PlayField = @import("play_field.zig");
 const AttractMode = @import("modes/attract.zig");
-const TimedPlayMode = @import("modes/timed_play.zig").TimedPlayMode;
+// const TimedPlayMode = @import("modes/timed_play.zig").TimedPlayMode;
 const bgm = @import("bgm.zig");
 const GameModes = @import("modes/game_modes.zig");
 const GameModeType = @import("modes/game_modes.zig").GameModeType;
@@ -24,152 +25,152 @@ const SpriteMod = @import("sprite.zig");
 const ANDROID = false;
 
 const heap_alloc = std.heap.c_allocator;
-pub var mode: *sdl.SDL_DisplayMode = undefined;
+// pub var mode: *sdl.SDL_DisplayMode = undefined;
 
 var current_song_index: usize = 0;
-pub fn main() !void {
-    if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO | sdl.SDL_INIT_EVENTS | sdl.SDL_INIT_AUDIO) < 0) {
-        sdlPanic();
-    }
-    defer sdl.SDL_Quit();
+// pub fn main() !void {
+//     if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO | sdl.SDL_INIT_EVENTS | sdl.SDL_INIT_AUDIO) < 0) {
+//         sdlPanic();
+//     }
+//     defer sdl.SDL_Quit();
 
-    if (ANDROID) {
-        _ = sdl.SDL_SetHint(sdl.SDL_HINT_MOUSE_TOUCH_EVENTS, "1");
-        _ = sdl.SDL_SetHint(sdl.SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
-        _ = sdl.SDL_SetHint(sdl.SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
-    } else {
-        _ = sdl.SDL_SetHint(sdl.SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
-        _ = sdl.SDL_SetHint(sdl.SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
-        _ = sdl.SDL_SetHint(sdl.SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
-    }
+//     if (ANDROID) {
+//         _ = sdl.SDL_SetHint(sdl.SDL_HINT_MOUSE_TOUCH_EVENTS, "1");
+//         _ = sdl.SDL_SetHint(sdl.SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+//         _ = sdl.SDL_SetHint(sdl.SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
+//     } else {
+//         _ = sdl.SDL_SetHint(sdl.SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
+//         _ = sdl.SDL_SetHint(sdl.SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
+//         _ = sdl.SDL_SetHint(sdl.SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
+//     }
 
-    mode = heap_alloc.create(sdl.SDL_DisplayMode) catch sdlPanic();
-    _ = sdl.SDL_GetDisplayMode(0, 0, mode);
-    defer sdl.SDL_free(mode);
+//     mode = heap_alloc.create(sdl.SDL_DisplayMode) catch sdlPanic();
+//     _ = sdl.SDL_GetDisplayMode(0, 0, mode);
+//     defer sdl.SDL_free(mode);
 
-    var window_flags: c_uint = sdl.SDL_WINDOW_SHOWN | sdl.SDL_WINDOW_RESIZABLE;
-    if (ANDROID) {
-        window_flags = sdl.SDL_WINDOW_FULLSCREEN | sdl.SDL_WINDOW_BORDERLESS;
-    } else {
-        // windowed mode, ovverride mode w/h
-        mode.w = 600;
-        mode.h = 800;
-    }
-    const window = sdl.SDL_CreateWindow("Super Cube Slide", sdl.SDL_WINDOWPOS_CENTERED, sdl.SDL_WINDOWPOS_CENTERED, mode.w, mode.h, window_flags) orelse sdlPanic();
-    // second monitory
-    if (!ANDROID) {
-        sdl.SDL_SetWindowPosition(window, 1680, 100);
-    }
-    defer sdl.SDL_DestroyWindow(window);
+//     var window_flags: c_uint = sdl.SDL_WINDOW_SHOWN | sdl.SDL_WINDOW_RESIZABLE;
+//     if (ANDROID) {
+//         window_flags = sdl.SDL_WINDOW_FULLSCREEN | sdl.SDL_WINDOW_BORDERLESS;
+//     } else {
+//         // windowed mode, ovverride mode w/h
+//         mode.w = 600;
+//         mode.h = 800;
+//     }
+//     const window = sdl.SDL_CreateWindow("Super Cube Slide", sdl.SDL_WINDOWPOS_CENTERED, sdl.SDL_WINDOWPOS_CENTERED, mode.w, mode.h, window_flags) orelse sdlPanic();
+//     // second monitory
+//     if (!ANDROID) {
+//         sdl.SDL_SetWindowPosition(window, 1680, 100);
+//     }
+//     defer sdl.SDL_DestroyWindow(window);
 
-    // bgm.start_song(current_song_index);
-    // defer bgm.close();
+//     // bgm.start_song(current_song_index);
+//     // defer bgm.close();
 
-    var renderer_flags: c_uint = sdl.SDL_RENDERER_ACCELERATED;
-    if (ANDROID) {
-        renderer_flags |= sdl.SDL_RENDERER_PRESENTVSYNC;
-    }
-    var renderer = sdl.SDL_CreateRenderer(window, -1, renderer_flags) orelse sdlPanic();
+//     var renderer_flags: c_uint = sdl.SDL_RENDERER_ACCELERATED;
+//     if (ANDROID) {
+//         renderer_flags |= sdl.SDL_RENDERER_PRESENTVSYNC;
+//     }
+//     var renderer = sdl.SDL_CreateRenderer(window, -1, renderer_flags) orelse sdlPanic();
 
-    SpriteMod.initTextures(&renderer) catch |err| {
-        std.log.err("{}", .{err});
-        return err;
-    };
+//     SpriteMod.initTextures(&renderer) catch |err| {
+//         std.log.err("{}", .{err});
+//         return err;
+//     };
 
-    var game_mode: GameModes.GameMode = GameModes.GameMode{ .attract = try AttractMode.AttractMode.init(heap_alloc, renderer) };
-    // var game_mode: GameModes.GameMode = GameModes.GameMode{ .timed_play = try TimedPlayMode.init(renderer) };
-    // const safe_area = sdl.SDL_Rect;
-    // sdl.SDL_GetWindowSafeArea(&safe_area);
+//     var game_mode: GameModes.GameMode = GameModes.GameMode{ .attract = try AttractMode.AttractMode.init(heap_alloc, renderer) };
+//     // var game_mode: GameModes.GameMode = GameModes.GameMode{ .timed_play = try TimedPlayMode.init(renderer) };
+//     // const safe_area = sdl.SDL_Rect;
+//     // sdl.SDL_GetWindowSafeArea(&safe_area);
 
-    var poll_event: sdl.SDL_Event = undefined;
-    mainLoop: while (true) {
-        const had_event = sdl.SDL_PollEvent(&poll_event);
-        if (had_event > 0) {
-            const consumed: bool = switch (poll_event.type) {
-                sdl.SDL_WINDOWEVENT => sw_blk: {
-                    //TODO: handle multiple windows?
-                    if (poll_event.window.event == sdl.SDL_WINDOWEVENT_RESIZED) {
-                        mode.w = poll_event.window.data1;
-                        mode.h = poll_event.window.data2;
-                    }
-                    break :sw_blk true;
-                },
-                sdl.SDL_QUIT => break :mainLoop,
-                sdl.SDL_KEYDOWN => sw_blk: {
-                    if (poll_event.key.keysym.sym == sdl.SDLK_ESCAPE) break :mainLoop;
-                    if (poll_event.key.keysym.sym == sdl.SDLK_q) break :mainLoop;
-                    const consumed = game_mode.on_key(&poll_event.key);
-                    break :sw_blk consumed;
-                },
-                sdl.SDL_MOUSEBUTTONUP,
-                sdl.SDL_MOUSEBUTTONDOWN,
-                sdl.SDL_MOUSEWHEEL,
-                => sw_blk: {
-                    const consumed = game_mode.on_input(&poll_event);
-                    break :sw_blk consumed;
-                },
-                sdl.SDL_FINGERUP, sdl.SDL_FINGERMOTION, sdl.SDL_FINGERDOWN => sw_blk2: {
-                    const consumed = game_mode.on_touch(&poll_event);
-                    break :sw_blk2 consumed;
-                },
-                else => false,
-            };
-            if (!consumed) {
-                switch (poll_event.type) {
-                    sdl.SDL_KEYDOWN => {
-                        global_on_key(&poll_event.key);
-                    },
-                    else => {},
-                }
-            }
-        }
-        const next_mode = game_mode.update();
-        if (next_mode) |mode_type| {
-            std.log.info("switching to new game mode: {?}", .{@intFromEnum(mode_type)});
-            const new_mode = switch (mode_type) {
-                GameModeType.Attract => GameModes.GameMode{ .attract = try AttractMode.AttractMode.init(heap_alloc, renderer) },
-                GameModeType.TimedPlay => GameModes.GameMode{ .timed_play = try TimedPlayMode.init(renderer) },
-                // GameModeType.TimedPlay => try AttractMode.AttractMode.init(&renderer),
-            };
-            // new_mode = GameModes.GameMode{.attract = new_mode}
-            defer {
-                game_mode.exit();
-                game_mode = new_mode;
-            }
-            continue :mainLoop;
-        }
+//     var poll_event: sdl.SDL_Event = undefined;
+//     mainLoop: while (true) {
+//         const had_event = sdl.SDL_PollEvent(&poll_event);
+//         if (had_event > 0) {
+//             const consumed: bool = switch (poll_event.type) {
+//                 sdl.SDL_WINDOWEVENT => sw_blk: {
+//                     //TODO: handle multiple windows?
+//                     if (poll_event.window.event == sdl.SDL_WINDOWEVENT_RESIZED) {
+//                         mode.w = poll_event.window.data1;
+//                         mode.h = poll_event.window.data2;
+//                     }
+//                     break :sw_blk true;
+//                 },
+//                 sdl.SDL_QUIT => break :mainLoop,
+//                 sdl.SDL_KEYDOWN => sw_blk: {
+//                     if (poll_event.key.keysym.sym == sdl.SDLK_ESCAPE) break :mainLoop;
+//                     if (poll_event.key.keysym.sym == sdl.SDLK_q) break :mainLoop;
+//                     const consumed = game_mode.on_key(&poll_event.key);
+//                     break :sw_blk consumed;
+//                 },
+//                 sdl.SDL_MOUSEBUTTONUP,
+//                 sdl.SDL_MOUSEBUTTONDOWN,
+//                 sdl.SDL_MOUSEWHEEL,
+//                 => sw_blk: {
+//                     const consumed = game_mode.on_input(&poll_event);
+//                     break :sw_blk consumed;
+//                 },
+//                 sdl.SDL_FINGERUP, sdl.SDL_FINGERMOTION, sdl.SDL_FINGERDOWN => sw_blk2: {
+//                     const consumed = game_mode.on_touch(&poll_event);
+//                     break :sw_blk2 consumed;
+//                 },
+//                 else => false,
+//             };
+//             if (!consumed) {
+//                 switch (poll_event.type) {
+//                     sdl.SDL_KEYDOWN => {
+//                         global_on_key(&poll_event.key);
+//                     },
+//                     else => {},
+//                 }
+//             }
+//         }
+//         const next_mode = game_mode.update();
+//         if (next_mode) |mode_type| {
+//             std.log.info("switching to new game mode: {?}", .{@intFromEnum(mode_type)});
+//             const new_mode = switch (mode_type) {
+//                 GameModeType.Attract => GameModes.GameMode{ .attract = try AttractMode.AttractMode.init(heap_alloc, renderer) },
+//                 GameModeType.TimedPlay => GameModes.GameMode{ .timed_play = try TimedPlayMode.init(renderer) },
+//                 // GameModeType.TimedPlay => try AttractMode.AttractMode.init(&renderer),
+//             };
+//             // new_mode = GameModes.GameMode{.attract = new_mode}
+//             defer {
+//                 game_mode.exit();
+//                 game_mode = new_mode;
+//             }
+//             continue :mainLoop;
+//         }
 
-        // try renderer.setColorRGB(0xF7, 0xA4, 0x1D);
-        // if (sdl.SDL_SetRenderDrawColor(renderer, 0xF7, 0xA4, 0x1D, 255) < 0) {}
-        if (sdl.SDL_SetRenderDrawColor(renderer, 0x20, 0x10, 0x10, 0xFF) < 0) {}
+//         // try renderer.setColorRGB(0xF7, 0xA4, 0x1D);
+//         // if (sdl.SDL_SetRenderDrawColor(renderer, 0xF7, 0xA4, 0x1D, 255) < 0) {}
+//         if (sdl.SDL_SetRenderDrawColor(renderer, 0x20, 0x10, 0x10, 0xFF) < 0) {}
 
-        // try renderer.clear();
-        if (sdl.SDL_RenderClear(renderer) > 0) {}
+//         // try renderer.clear();
+//         if (sdl.SDL_RenderClear(renderer) > 0) {}
 
-        game_mode.paint(renderer, mode);
-        sdl.SDL_RenderPresent(renderer);
-        // renderer.present();
-    }
-    game_mode.exit();
-    // sdl.SDL_DestroyRenderer(renderer);
-}
+//         game_mode.paint(renderer, mode);
+//         sdl.SDL_RenderPresent(renderer);
+//         // renderer.present();
+//     }
+//     game_mode.exit();
+//     // sdl.SDL_DestroyRenderer(renderer);
+// }
 
-fn global_on_key(event: *sdl.SDL_KeyboardEvent) void {
-    if (event.keysym.sym == sdl.SDLK_m) {
-        bgm.pause_music();
-    }
-    if (event.keysym.sym == sdl.SDLK_n) {
-        current_song_index += 1;
-        if (current_song_index > 2) {
-            current_song_index = 0;
-        }
-        bgm.start_song(current_song_index);
-    }
-}
-fn sdlPanic() noreturn {
-    const str = @as(?[*:0]const u8, sdl.SDL_GetError()) orelse "unknown error";
-    @panic(std.mem.sliceTo(str, 0));
-}
+// fn global_on_key(event: *sdl.SDL_KeyboardEvent) void {
+//     if (event.keysym.sym == sdl.SDLK_m) {
+//         bgm.pause_music();
+//     }
+//     if (event.keysym.sym == sdl.SDLK_n) {
+//         current_song_index += 1;
+//         if (current_song_index > 2) {
+//             current_song_index = 0;
+//         }
+//         bgm.start_song(current_song_index);
+//     }
+// }
+// fn sdlPanic() noreturn {
+//     const str = @as(?[*:0]const u8, sdl.SDL_GetError()) orelse "unknown error";
+//     @panic(std.mem.sliceTo(str, 0));
+// }
 
 // pub fn pollEvent() ?Event {
 //     var ev: c.SDL_Event = undefined;
@@ -189,9 +190,11 @@ pub const app_state = struct {
     var rx: f32 = 0.0;
     var ry: f32 = 0.0;
     var direction: f16 = 1.0;
-    var pip: sg.Pipeline = .{};
+    pub var win_x: i32 = 600; // TODO: how to query this from sapp?
+    pub var win_y: i32 = 800;
+    pub var pip: sg.Pipeline = .{};
     pub var bind: sg.Bindings = .{};
-    var pass_action: sg.PassAction = .{};
+    pub var pass_action: sg.PassAction = .{};
     pub var dt: f64 = 0.0;
     var game_mode: GameModes.GameMode = undefined;
     pub const offscreen = struct {
@@ -206,6 +209,8 @@ pub const app_state = struct {
 export fn init() void {
     stime.setup();
     // var game_state = app_state{};
+    app_state.win_x = sokol.app.width();
+    app_state.win_y = sokol.app.height();
     sg.setup(.{
         .environment = sglue.environment(),
         .logger = .{ .func = sokol.log.func },
@@ -230,6 +235,8 @@ export fn init() void {
     pip_desc.layout.attrs[shader.ATTR_fsq_position].format = .FLOAT3;
     pip_desc.layout.attrs[shader.ATTR_fsq_texcoord0].format = .FLOAT2;
     pip_desc.layout.attrs[shader.ATTR_fsq_sppos] = .{ .format = .FLOAT4, .buffer_index = 1 };
+    pip_desc.layout.attrs[shader.ATTR_fsq_sample_idx] = .{ .format = .FLOAT, .buffer_index = 1 };
+    pip_desc.layout.attrs[shader.ATTR_fsq_flip_uv] = .{ .format = .FLOAT, .buffer_index = 1 };
     app_state.pip = sg.makePipeline(pip_desc);
     // framebuffer clear color
     app_state.pass_action.colors[0] = .{ .load_action = .CLEAR, .clear_value = .{ .r = 0.15, .g = 0.15, .b = 0.25, .a = 0.25 } };
@@ -238,18 +245,24 @@ export fn init() void {
 
     app_state.bind.vertex_buffers[0] = sg.makeBuffer(.{
         .data = sg.asRange(&[_]f32{
-            // positions (float3)    UV tex (float2)
+            // positions (float3)    UV tex (float2), sizepos (float4)
             -1.0, -1.0, 1.0, 0.0, 0.0,
             1.0,  -1.0, 1.0, 1.0, 0.0,
             -1.0, 1.0,  1.0, 0.0, 1.0,
             1.0,  1.0,  1.0, 1.0, 1.0,
+
+            -1.0, -1.0, 1.0, 0.0, 0.0,
+            1.0,  -1.0, 1.0, 1.0, 0.0,
+            -1.0, 1.0,  1.0, 0.0, 1.0,
+            1.0,  1.0,  1.0, 1.0, 1.0,
+
         }),
     });
     const max_sprites = 50;
     // an empty dynamic vertex buffer for the instancing data, goes in vertex buffer slot 1
     app_state.bind.vertex_buffers[1] = sg.makeBuffer(.{
         .usage = .STREAM,
-        .size = max_sprites * @sizeOf(f32) * 4,
+        .size = max_sprites * @sizeOf(f32) * 5,
     });
 
     var offscreen_pip_desc: sg.PipelineDesc = .{
@@ -293,6 +306,8 @@ export fn init() void {
 }
 
 fn createOffscreenAttachment(w: i32, h: i32) void {
+    _ = w;
+    _ = h;
     sg.destroyAttachments(app_state.offscreen.attachments);
     for (app_state.offscreen.attachments_desc.colors) |att| {
         sg.destroyImage(att.image);
@@ -301,15 +316,15 @@ fn createOffscreenAttachment(w: i32, h: i32) void {
     // create offscreen render target images and pass
     const color_img_desc: sg.ImageDesc = .{
         .render_target = true,
-        .width = w,
-        .height = h,
+        .width = 500,
+        .height = 500,
         .sample_count = 1,
     };
     inline for (.{0}) |i| {
         app_state.offscreen.attachments_desc.colors[i].image = sg.makeImage(color_img_desc);
     }
     app_state.offscreen.attachments = sg.makeAttachments(app_state.offscreen.attachments_desc);
-    app_state.bind.images[shader.IMG_tex0] = app_state.offscreen.attachments_desc.colors[0].image;
+    app_state.bind.images[shader.IMG_tex1] = app_state.offscreen.attachments_desc.colors[0].image;
 }
 
 export fn frame() void {
@@ -322,32 +337,30 @@ export fn frame() void {
     _ = app_state.game_mode.update();
     app_state.game_mode.render(&app_state);
 
-    sg.beginPass(.{ .action = app_state.pass_action, .swapchain = sglue.swapchain() });
-
-    //update dynamic sprite pos buffer
-    var pos: [50 * 4]f32 = undefined;
-    @memset(&pos, 0);
-    // const mypos: f32 = @as(f32, @floatCast(std.math.sin(app_state.dt) * std.math.sin(app_state.dt)));
-    const mypos: f32 = 1.0;
-    // const uint32: u32 = @as(u32, @bitCast(mypos));
-    pos[0] = mypos;
-    sg.updateBuffer(app_state.bind.vertex_buffers[1], sg.asRange(&pos));
-    sg.applyPipeline(app_state.pip);
-    sg.applyBindings(app_state.bind);
-    sg.draw(0, 4, 1);
-    sg.endPass();
-    sg.commit();
-
     const delay: u64 = @as(u64, @intFromFloat(stime.ns(stime.diff(stime.now(), now))));
+    // std.debug.print("{}", .{delay});
     const ns_per_ms = 1000 * 1000;
-    std.time.sleep((32 * ns_per_ms) - delay);
+    std.time.sleep((32 * ns_per_ms) - @max(0, delay));
 }
+
 export fn cleanup() void {
     sg.shutdown();
 }
 
 export fn my_event_cb(event: [*c]const sevent) callconv(.C) void {
-    _ = app_state.game_mode.on_input(event);
+    const consumed = app_state.game_mode.on_input(event);
+    if (consumed) {
+        return;
+    }
+    switch (event.*.type) {
+        sokol.app.EventType.RESIZED => {
+            app_state.win_x = event.*.window_width;
+            app_state.win_y = event.*.window_height;
+        },
+        else => {},
+    }
+
+    // std.debug.print("{} x {}\n", .{ app_state.win_x, app_state.win_y });
     // switch (event.*.type) {
     //     sokol.app.EventType.MOUSE_DOWN => {
     //         _ = app_state.game_mode.ok_input();
@@ -368,5 +381,5 @@ pub export const app_descriptor: sapp.Desc = .{
     .window_title = "supercubeslide.zig",
     // .logger = .{ .func = slog.func },
     .width = 600,
-    .height = 600,
+    .height = 800,
 };

@@ -4,20 +4,20 @@ const sdl = MainModule.sdl;
 const sokol = @import("sokol");
 
 const Attract = @import("attract.zig").AttractMode;
-const TimedPlay = @import("timed_play.zig").TimedPlayMode;
+// const TimedPlay = @import("timed_play.zig").TimedPlayMode;
 pub const TimedPlaySokol = @import("timed_play_sokol.zig").TimedPlayMode;
 const app_state = @import("../sokol.zig").app_state;
 
 pub const GameModeType = enum {
     Attract,
-    TimedPlay,
+    // TimedPlay,
     TimedPlaySokol,
 };
 
 pub const GameMode = union(enum) {
     const Self = @This();
     attract: Attract,
-    timed_play: TimedPlay,
+    // timed_play: TimedPlay,
     timed_play_sokol: TimedPlaySokol,
 
     pub fn init(self: *Self, renderer: *sdl.SDL_Renderer) !GameMode {

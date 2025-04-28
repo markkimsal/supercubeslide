@@ -1,6 +1,5 @@
 const std = @import("std");
 const sokol = @import("sokol");
-// const sdl = @import("sdl2");
 const MainModule = @import("../main.zig");
 const sdl = MainModule.sdl;
 const GameModes = @import("game_modes.zig");
