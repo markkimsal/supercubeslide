@@ -381,5 +381,5 @@ pub export const app_descriptor: sapp.Desc = .{
     .window_title = "supercubeslide.zig",
     // .logger = .{ .func = slog.func },
     .width = 600,
-    .height = 800,
+    .height = 1000,
 };

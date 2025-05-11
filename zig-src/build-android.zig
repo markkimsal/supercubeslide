@@ -174,7 +174,7 @@ pub fn build(b: *std.Build) !void {
             exe.addLibraryPath( .{.cwd_relative = sdl_path});
         }
     }
- 
+
 
     // Make the app build when we invoke "zig build" or "zig build install"
     b.getInstallStep().dependOn(app.final_step);

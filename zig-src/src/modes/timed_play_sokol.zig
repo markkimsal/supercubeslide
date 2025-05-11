@@ -23,8 +23,8 @@ const max_width = @import("../play_field.zig").max_width;
 
 const heap_alloc = std.heap.c_allocator;
 pub const TimedPlayMode = struct {
-    background_image: *sdl.SDL_Texture,
-    cube_a: *sdl.SDL_Texture,
+    // background_image: *sdl.SDL_Texture,
+    // cube_a: *sdl.SDL_Texture,
     play_field: PlayField,
     play_field_offset_x: c_int = 150,
     play_field_offset_y: c_int = 120,
@@ -125,8 +125,8 @@ pub const TimedPlayMode = struct {
         };
         play_field.populateField(0, 4, 4);
         var play_mode = TimedPlayMode{
-            .background_image = undefined,
-            .cube_a = undefined,
+            // .background_image = undefined,
+            // .cube_a = undefined,
             .next_mode = null,
             .play_field = play_field,
             .animation = null,
@@ -161,22 +161,21 @@ pub const TimedPlayMode = struct {
         _ = self;
         sg.beginPass(.{ .action = state.pass_action, .swapchain = sglue.swapchain() });
 
-        const sub_rect = centered_square(state.win_x, state.win_y, 1080, 1080);
-        // _ = sub_rect;
+        const bg_rect = centered_square(state.win_x, state.win_y, 1080, 1080);
+        var sub_rect = bg_rect;
+        sub_rect[0] = sub_rect[0] * 0.80;
+        sub_rect[1] = sub_rect[1] * 0.90;
+        sub_rect[2] -= sub_rect[0] * 0.18; // shift to the left a bit relative to size
         //update dynamic sprite pos buffer
         var pos: [4 * 6]f32 = [4 * 6]f32{
             // positions (float2)    pos (float2), texture_index (float), uv_flip (float)
-            1.0, 1.0, 0.0, 0.0, 0, 1,
-            sub_rect[0], sub_rect[1], -0.10, 0.0, 1, 0,
+            bg_rect[0], bg_rect[1], bg_rect[2], bg_rect[3], 0, 1,
+            sub_rect[0], sub_rect[1], sub_rect[2], sub_rect[3], 1, 0,
             1.0, 1.0, 0.35, 0.35, 2, 1,
             1.0, 1.0, 0.45, 0.45, 3, 1,
         };
         // @memset(&pos, 0);
-        // const mypos: f32 = @as(f32, @floatCast(std.math.sin(state.dt) * std.math.sin(state.dt)));
 
-        // const sub_rect = determine_sub_rect(state.win_x, state.win_y);
-        // sg.applyViewport(sub_rect[0], sub_rect[1], sub_rect[2], sub_rect[3], true);
-        // state.bind.images[shader.IMG_tex1] = state.offscreen.bind.images[shader.IMG_tex_a];
         state.bind.images[shader.IMG_tex2] = state.offscreen.attachments_desc.colors[0].image;
         sg.updateBuffer(state.bind.vertex_buffers[1], sg.asRange(&pos));
         sg.applyPipeline(state.pip);
@@ -839,22 +838,30 @@ fn determine_sub_rect(x: i32, y: i32) [4]i32 {
 
 
 fn centered_square (x: i32, y: i32, u:i32, v:i32) [4]f32 {
-    const padding = 10;
+    const padding = 0;
     const is_vertical = y > x;
     var size_u: i32 = u;
     var size_v: i32 = v;
     var ratio: f32 = 0.0;
+    var h_offset: f32 = 0.0;
+    var v_offset: f32 = 0.0;
     if (is_vertical) {
         ratio = @as(f32, @floatFromInt(x)) / @as(f32, @floatFromInt(y));
-        if (x < size_u - padding)
+        if (x < (size_u - padding)) {
             size_u = x - padding;
             size_v = x - padding;
+        }
+
+        h_offset = 0.0;
+        v_offset = 0.0;
     } else {
         ratio = @as(f32, @floatFromInt(y)) / @as(f32, @floatFromInt(x));
-        if (y < size_v - padding) {
+        if (y < (size_v - padding)) {
             size_u = y - padding;
             size_v = y - padding;
         }
+        h_offset = 0.0;
+        v_offset = 0.0;
     }
 
     // const new_v: i32 = @as(i32, @intFromFloat(@divTrunc(@as(f32, @floatFromInt(v)), ratio)));
@@ -866,8 +873,8 @@ fn centered_square (x: i32, y: i32, u:i32, v:i32) [4]f32 {
     new_uf = @as(f32, @floatFromInt(size_u));
     new_vf =  new_vf / @as(f32, @floatFromInt(y));
     new_uf =  new_uf / @as(f32, @floatFromInt(x));
-    std.debug.print("{} {} {} {}\n", .{ new_vf, new_uf, new_vf, ratio });
-    return .{ new_uf, new_vf, new_vf, new_uf };
+    // std.debug.print("{} {} {} {}\n", .{ new_vf, new_uf, new_vf, ratio });
+    return .{ new_uf, new_vf, h_offset, v_offset};
 
     // // android is 1080x2400
     // // std.debug.print("{} {} {} {}\n", .{ voffset, hoffset, size, size });
