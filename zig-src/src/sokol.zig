@@ -14,17 +14,17 @@ const stime = sokol.time;
 //     @cInclude("SDL_mixer.h");
 // });
 const PlayField = @import("play_field.zig");
-const AttractMode = @import("modes/attract.zig");
 // const TimedPlayMode = @import("modes/timed_play.zig").TimedPlayMode;
 const bgm = @import("bgm.zig");
 const GameModes = @import("modes/game_modes.zig");
 const GameModeType = @import("modes/game_modes.zig").GameModeType;
 const TimedPlayModeSokol = GameModes.TimedPlaySokol;
+const AttractMode = GameModes.Attract;
 const SpriteMod = @import("sprite.zig");
 
 const ANDROID = false;
 
-const heap_alloc = std.heap.c_allocator;
+pub const heap_alloc = std.heap.c_allocator;
 // pub var mode: *sdl.SDL_DisplayMode = undefined;
 
 var current_song_index: usize = 0;
@@ -197,6 +197,7 @@ pub const app_state = struct {
     pub var pass_action: sg.PassAction = .{};
     pub var dt: f64 = 0.0;
     var game_mode: GameModes.GameMode = undefined;
+    pub var alligator = heap_alloc;
     pub const offscreen = struct {
         pub var attachments: sg.Attachments = .{};
         pub var attachments_desc: sg.AttachmentsDesc = .{};
@@ -302,7 +303,8 @@ export fn init() void {
 
     createOffscreenAttachment(sapp.width(), sapp.height());
 
-    app_state.game_mode = GameModes.GameMode{ .timed_play_sokol = TimedPlayModeSokol.init(&app_state) catch unreachable };
+    // app_state.game_mode = GameModes.GameMode{ .timed_play_sokol = TimedPlayModeSokol.init(&app_state) catch unreachable };
+    app_state.game_mode = GameModes.GameMode{ .attract = AttractMode.init(&app_state) catch unreachable };
 }
 
 fn createOffscreenAttachment(w: i32, h: i32) void {
@@ -332,15 +334,17 @@ export fn frame() void {
     // const time: u64 = sapp.frameCount();
     // const time: f64 = @floatCast(sapp.timing.last);
     app_state.dt += time;
-    const now = stime.now();
 
     _ = app_state.game_mode.update();
     app_state.game_mode.render(&app_state);
 
+    const now = stime.now();
     const delay: u64 = @as(u64, @intFromFloat(stime.ns(stime.diff(stime.now(), now))));
     // std.debug.print("{}", .{delay});
     const ns_per_ms = 1000 * 1000;
-    std.time.sleep((32 * ns_per_ms) - @max(0, delay));
+    if (delay < (32 * ns_per_ms)) {
+        std.time.sleep((32 * ns_per_ms) - @max(0, delay));
+    }
 }
 
 export fn cleanup() void {

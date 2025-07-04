@@ -1,0 +1,19 @@
+.{
+    .name = "supercubeslide",
+    .version = "0.9.0",
+    .dependencies = .{
+        .sokol = .{
+            // .url = "git+https://github.com/floooh/sokol-zig.git#d8e164c60039a15977e1d59e434dddeed5c9e568",
+            .url = "git+https://github.com/floooh/sokol-zig.git#18ade9c0904b6a6db27e5f04914d4078b03b9d2d",
+            .hash = "122057f5e1a4a660248e402a39f785305d27fc86892a4d36f7fcf512cd58e847d925",
+        },
+        .zigimg = .{
+            .url = "git+https://github.com/zigimg/zigimg.git#588f11f24cdc3b12f46082217dc830436b7f325e",
+            .hash = "1220dc313944ea71a87b4f54f26b1427ad2992a721a221cb42f7f80b8eee4e4944b7",
+        },
+        .kubazip = .{
+            .path = "deps/kuba-zip",
+        },
+    },
+    .paths = .{""},
+}

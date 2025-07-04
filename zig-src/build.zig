@@ -3,6 +3,7 @@ const Build = std.Build;
 // const zig_sokol_build = @import("zig_sokol_crossplatform_starter");
 const zig_sokol_build = @import("./vendor/zig-sokol-crossplatform-starter/build.zig");
 // const Sdk = @import("mods/sdl-zig/Sdk.zig"); // Import the Sdk at build time
+const android_build = @import("./build/android.zig");
 
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
@@ -23,10 +24,10 @@ pub fn build(b: *std.Build) !void {
 
     const default_sokol_res = try zig_sokol_build.buildSokolLib(b, target, optimize);
     var exe = try zig_sokol_build.buildExe(b, target, optimize, default_sokol_res.module);
-    const install_default_exe = b.addInstallArtifact(exe, .{});
+    // const install_default_exe = b.addInstallArtifact(exe, .{});
 
-    const install_default = b.step("default", "Build binaries for the current system (or specified in command)");
-    install_default.dependOn(&install_default_exe.step);
+    // const install_default = b.step("default", "Build binaries for the current system (or specified in command)");
+    // install_default.dependOn(&install_default_exe.step);
 
     const zigimg_dependency = b.dependency("zigimg", .{
         .target = target,

@@ -1,5 +1,8 @@
 const std = @import("std");
 const sokol = @import("sokol");
+const sg = sokol.gfx;
+const sglue = sokol.glue;
+const shader = @import("../shaders/playfield.glsl.zig");
 const MainModule = @import("../main.zig");
 const sdl = MainModule.sdl;
 const GameModes = @import("game_modes.zig");
@@ -7,46 +10,75 @@ const SpriteModule = @import("../sprite.zig");
 const bgm = @import("../bgm.zig");
 const MenuItem = @import("../ui/menu_item.zig").MenuItem;
 const app_state = @import("../sokol.zig").app_state;
+const zigimg = @import("zigimg");
 
 var debug_rect_: ?sdl.SDL_Rect = undefined;
 
+
+
 pub const AttractMode = struct {
-    background_image: *sdl.SDL_Texture,
-    font: *sdl.TTF_Font,
+    // background_image: *sdl.SDL_Texture,
+    // font: *sdl.TTF_Font,
     next_mode: ?GameModes.GameModeType,
-    display_mode: ?*sdl.SDL_DisplayMode,
-    menu_items: std.ArrayList(MenuItem),
+    // display_mode: ?*sdl.SDL_DisplayMode,
+    // menu_items: std.ArrayList(MenuItem),
 
-    pub fn init(alligator: std.mem.Allocator, renderer: *sdl.SDL_Renderer) !AttractMode {
+    pub fn init(state: anytype) !AttractMode {
+        // const img = @embedFile("loadingscreen.png");
         const img = @embedFile("loadingscreen.png");
-        const texture = SpriteModule.loadTextureMem(renderer, img[0..], SpriteModule.ImgFormat.png) catch |err| {
-            return err;
+        var image = try zigimg.Image.fromMemory(state.alligator, img[0..]);
+        // image = flip_image(allocator, &image);
+        var img_desc: sg.ImageDesc = .{
+            .width = 640,
+            .height = 480,
         };
-        if (sdl.TTF_Init() > 0) {
-            return error.SdlErrors;
-        }
-        const font_mem = @embedFile("freesansbold.ttf");
-        const font_rw = sdl.SDL_RWFromConstMem(
-            @ptrCast(&font_mem[0]),
-            @intCast(font_mem.len),
-        ) orelse return error.SdlError;
+        img_desc.data.subimage[0][0] = sg.asRange(image.rawBytes());
+        state.bind.images[shader.IMG_tex1] = sg.makeImage(img_desc);
+        state.bind.images[shader.IMG_tex2] = sg.makeImage(img_desc);
+        defer image.deinit();
 
-        const font = sdl.TTF_OpenFontRW(font_rw, 1, 20);
 
-        var menu_items = std.ArrayList(MenuItem).init(alligator);
-        create_menu_items(&menu_items, font, renderer);
+
+        //update dynamic sprite pos buffer
+        var pos: [1 * 6]f32 = [1 * 6]f32{
+            // positions (float2)    pos (float2), texture_index (float), uv_flip (float)
+            1.0, 1.0, 0.0, 0.0, 1, 1,
+        };
+        sg.updateBuffer(state.bind.vertex_buffers[1], sg.asRange(&pos));
+
+        // const texture = SpriteModule.loadTextureMem(renderer, img[0..], SpriteModule.ImgFormat.png) catch |err| {
+        //     return err;
+        // };
+        // if (sdl.TTF_Init() > 0) {
+        //     return error.SdlErrors;
+        // }
+        // const font_mem = @embedFile("freesansbold.ttf");
+        // const font_rw = sdl.SDL_RWFromConstMem(
+        //     @ptrCast(&font_mem[0]),
+        //     @intCast(font_mem.len),
+        // ) orelse return error.SdlError;
+
+        // const font = sdl.TTF_OpenFontRW(font_rw, 1, 20);
+
+        // var menu_items = std.ArrayList(MenuItem).init(state.alligator);
+        // create_menu_items(&menu_items, font, renderer);
         return AttractMode{
-            .background_image = texture,
+            // .background_image = img,
             .next_mode = null,
-            .display_mode = null,
-            .font = font.?,
-            .menu_items = menu_items,
+            // .display_mode = null,
+            // .font = font.?,
+            // .menu_items = menu_items,
         };
     }
 
     pub fn render(self: @This(), state: anytype) void {
         _ = self;
-        _ = state;
+        sg.beginPass(.{ .action = state.pass_action, .swapchain = sglue.swapchain() });
+
+        sg.applyPipeline(state.pip);
+        sg.applyBindings(state.bind);
+        sg.draw(0, 4, 1);
+        sg.endPass();
     }
 
     pub fn paint(self: *AttractMode, renderer: *sdl.SDL_Renderer, mode: *sdl.SDL_DisplayMode) void {
@@ -383,3 +415,10 @@ fn create_menu_items(menu_items: *std.ArrayList(MenuItem), font: ?*sdl.TTF_Font,
     );
     menu_items.append(menu_item4) catch {};
 }
+
+const VsParams = struct {
+    pos_x: f32,
+    pos_y: f32,
+    color: u32,
+    desat: f32,
+};
